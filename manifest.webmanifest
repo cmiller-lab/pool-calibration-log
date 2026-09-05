@@ -1,0 +1,10 @@
+{
+  "name": "Pool Calibration Log",
+  "short_name": "Calibration",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "description": "Offline-first pool controller spot check and calibration history PWA."
+}

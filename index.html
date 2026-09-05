@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Pool Calibration Log</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    :root{
+      --bg:#0b0f14;--panel:#121821;--panel2:#18212c;--line:#273241;--text:#edf3f8;
+      --muted:#94a3b8;--accent:#4da3ff;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .app{max-width:900px;margin:0 auto;padding:14px 14px 88px}
+    header{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 84%,transparent);padding:8px 0 12px}
+    h1{font-size:22px;margin:0 0 8px}
+    .subrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .pill{font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--panel)}
+    .pill.local{color:#ffd28a;border-color:#5b4316}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:12px 0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+    input,select,textarea,button{font:inherit}
+    input,select,textarea{width:100%;background:#0e141c;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;min-height:48px}
+    textarea{min-height:90px}
+    .section-title{font-size:14px;font-weight:700;margin:0 0 10px}
+    .measure-head,.measure-row{display:grid;grid-template-columns:1.05fr 1fr 1fr .8fr;gap:8px;align-items:center}
+    .measure-head{font-size:11px;color:var(--muted);padding:0 2px 6px}
+    .measure-row{margin-bottom:8px}
+    .measure-row .metric{font-weight:700}
+    .delta{display:flex;align-items:center;justify-content:center;min-height:48px;background:#0e141c;border:1px solid var(--line);border-radius:10px;font-variant-numeric:tabular-nums}
+    .delta.good{border-color:#1f6c39;color:#89e4a9}
+    .delta.warn{border-color:#775317;color:#ffd188}
+    .delta.bad{border-color:#7d2828;color:#ffabab}
+    .orp-row{display:grid;grid-template-columns:1.05fr 1fr 1fr .8fr;gap:8px;align-items:center}
+    .orp-row input{grid-column:2/3}
+    .btn{width:100%;border:0;border-radius:12px;padding:14px 16px;min-height:52px;font-weight:800}
+    .primary{background:var(--accent);color:white}
+    .secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+    .danger{background:#3a1515;color:#ffb3b3;border:1px solid #6c2424}
+    .hidden{display:none!important}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .kpi{background:#0e141c;border:1px solid var(--line);border-radius:10px;padding:10px}
+    .kpi .v{font-size:18px;font-weight:800}
+    .kpi .l{font-size:11px;color:var(--muted);margin-top:4px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .toolbar button{flex:1;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px}
+    .toolbar button.active{border-color:var(--accent);color:#b9dcff}
+    .history{display:grid;gap:8px}
+    .rowcard{border:1px solid var(--line);border-radius:10px;background:#0e141c;padding:10px}
+    .rowtop{display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .rowtitle{font-weight:700}
+    .rowmeta{font-size:11px;color:var(--muted)}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+    .metricbox{background:var(--panel2);padding:8px;border-radius:8px;font-size:12px}
+    .metricbox b{display:block;font-size:14px;margin-top:2px}
+    canvas{width:100%;height:300px;background:#0e141c;border:1px solid var(--line);border-radius:10px}
+    .insight{padding:12px;background:#0e141c;border:1px solid var(--line);border-radius:10px;margin-top:10px}
+    details{margin-top:10px}
+    summary{cursor:pointer;color:#cbd5e1}
+    nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,14,20,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;z-index:10;padding:max(8px,env(safe-area-inset-bottom)) 8px 8px}
+    nav button{flex:1;background:none;color:var(--muted);border:0;padding:10px 4px;font-size:12px}
+    nav button.active{color:white;font-weight:800}
+    .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#17202b;color:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:999px;display:none;z-index:20}
+    .muted{color:var(--muted);font-size:12px}
+    @media(max-width:650px){
+      .grid2{grid-template-columns:1fr}
+      .kpis{grid-template-columns:1fr 1fr}
+      .measure-head,.measure-row,.orp-row{grid-template-columns:.9fr 1fr 1fr .75fr}
+      .app{padding-left:10px;padding-right:10px}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Pool Calibration Log</h1>
+    <div class="subrow">
+      <span class="pill local">LOCAL TEST MODE</span>
+      <span class="pill" id="selectedPoolPill">No pool selected</span>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="grid2">
+      <div>
+        <label for="property">Property</label>
+        <select id="property"></select>
+      </div>
+      <div>
+        <label for="pool">Pool</label>
+        <select id="pool"></select>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section id="view-spot">
+      <div class="card">
+        <div class="grid2">
+          <div>
+            <label for="tech">Technician</label>
+            <input id="tech" autocomplete="name" placeholder="Technician name" />
+          </div>
+          <div>
+            <label for="observedAt">Observed date/time</label>
+            <input id="observedAt" type="datetime-local" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Measurements</h2>
+        <div class="measure-head"><span>Metric</span><span>Controller</span><span>Field Test</span><span>Δ Ctrl−Test</span></div>
+        <div class="measure-row">
+          <div class="metric">pH</div>
+          <input id="controllerPh" type="number" inputmode="decimal" step="0.01" min="0" max="14" placeholder="7.40"/>
+          <input id="testPh" type="number" inputmode="decimal" step="0.01" min="0" max="14" placeholder="7.40"/>
+          <div class="delta" id="phDelta">—</div>
+        </div>
+        <div class="measure-row">
+          <div class="metric">Free Chlorine</div>
+          <input id="controllerFc" type="number" inputmode="decimal" step="0.01" min="0" max="60" placeholder="3.50"/>
+          <input id="testFc" type="number" inputmode="decimal" step="0.01" min="0" max="60" placeholder="3.50"/>
+          <div class="delta" id="fcDelta">—</div>
+        </div>
+        <div class="orp-row">
+          <div class="metric">ORP</div>
+          <input id="orpMv" type="number" inputmode="numeric" step="1" min="0" max="1200" placeholder="735"/>
+          <div class="muted">mV</div><div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <label style="display:flex;gap:10px;align-items:center;color:var(--text)">
+          <input id="calPerformed" type="checkbox" style="width:22px;min-height:auto" />
+          Calibration performed during this visit
+        </label>
+        <div id="calFields" class="hidden" style="margin-top:12px">
+          <div class="grid2">
+            <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input id="phCal" type="checkbox" style="width:22px;min-height:auto"/> pH calibrated</label>
+            <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input id="fcCal" type="checkbox" style="width:22px;min-height:auto"/> FC calibrated</label>
+          </div>
+          <div class="grid2" style="margin-top:10px">
+            <div><label>Post-calibration pH</label><input id="postPh" type="number" inputmode="decimal" step="0.01"/></div>
+            <div><label>Post-calibration FC</label><input id="postFc" type="number" inputmode="decimal" step="0.01"/></div>
+          </div>
+        </div>
+        <details>
+          <summary>Notes</summary>
+          <textarea id="notes" placeholder="Optional notes"></textarea>
+        </details>
+      </div>
+
+      <button class="btn primary" id="saveBtn">Save Spot Check</button>
+
+      <div class="card">
+        <h2 class="section-title">Recent checks</h2>
+        <div id="recentChecks" class="history"></div>
+      </div>
+    </section>
+
+    <section id="view-history" class="hidden">
+      <div class="card">
+        <div class="kpis">
+          <div class="kpi"><div class="v" id="kpiChecks">0</div><div class="l">Checks</div></div>
+          <div class="kpi"><div class="v" id="kpiLast">—</div><div class="l">Last check</div></div>
+          <div class="kpi"><div class="v" id="kpiPh">—</div><div class="l">Median |pH Δ|</div></div>
+          <div class="kpi"><div class="v" id="kpiFc">—</div><div class="l">Median |FC Δ|</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar" id="historyFilter">
+          <button data-days="7">7D</button><button data-days="30" class="active">30D</button><button data-days="90">90D</button><button data-days="all">All</button>
+        </div>
+        <div id="historyRows" class="history"></div>
+      </div>
+    </section>
+
+    <section id="view-orp" class="hidden">
+      <div class="card">
+        <div class="grid2">
+          <div><label>Target field-test FC</label><input id="targetFc" type="number" inputmode="decimal" step="0.01" placeholder="3.50"/></div>
+          <div><label>Target field-test pH</label><input id="targetPh" type="number" inputmode="decimal" step="0.01" placeholder="7.40"/></div>
+        </div>
+        <div class="grid2" style="margin-top:10px">
+          <div><label>FC comparison window ± ppm</label><input id="fcWindow" type="number" inputmode="decimal" step="0.05" value="0.25"/></div>
+          <div><label>pH comparison window ±</label><input id="phWindow" type="number" inputmode="decimal" step="0.01" value="0.10"/></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="section-title">Historical ORP profile</h2>
+        <canvas id="orpChart" width="800" height="420"></canvas>
+        <div class="insight" id="orpInsight">Enter target FC and pH to evaluate comparable historical readings.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav>
+  <button data-view="spot" class="active">Spot Check</button>
+  <button data-view="history">History</button>
+  <button data-view="orp">ORP Profile</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const POOLS = [
+  ["Aquatica","501","Cutback Cove"],["Aquatica","502","Big Surf Shores"],["Aquatica","503","Omaka Rocka"],
+  ["Aquatica","504","Katas Kookaburra"],["Aquatica","505","Roa's Rapids"],["Aquatica","506","Whanau Way"],
+  ["Aquatica","507","Walkabout Waters"],["Aquatica","508","Ray Rush/Whahalla Wave"],["Aquatica","509","Loggerhead/Tassie"],
+  ["Aquatica","510","Dolphin Plunge"],["Aquatica","520","Ihu Breakaway Falls"],["Aquatica","530","Taumata Racer"],
+  ["Aquatica","540","KareKareKurl"],["Aquatica","550","Riptide"],
+  ["SeaWorld","Infinity Falls 1","Infinity Falls 1"],["SeaWorld","Infinity Falls 2","Infinity Falls 2"],
+  ["SeaWorld","Kraken","Kraken"],["SeaWorld","Manta Pond","Manta Pond"],["SeaWorld","Main Gate","Main Gate"],
+  ["SeaWorld","Journey to Atlantis","Journey to Atlantis"],["SeaWorld","Sesame","Sesame"],["SeaWorld","Pearl","Pearl"],
+  ["Discovery Cove","Tropical River/Resort Pool","Tropical River/Resort Pool"],["Discovery Cove","Freshwater Oasis","Freshwater Oasis"]
+].map(([property,id,name])=>({property,id,name,key:`${property}|${id}`}));
+
+const $ = id => document.getElementById(id);
+const state = {historyDays:30};
+
+function nowLocalInput(){
+  const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+$("observedAt").value=nowLocalInput();
+
+function loadPrefs(){
+  $("tech").value=localStorage.getItem("pcl.tech")||"";
+}
+function initSelectors(){
+  const props=[...new Set(POOLS.map(p=>p.property))];
+  $("property").innerHTML=props.map(p=>`<option>${p}</option>`).join("");
+  const savedProp=localStorage.getItem("pcl.property");
+  if(savedProp && props.includes(savedProp)) $("property").value=savedProp;
+  fillPools();
+  const savedPool=localStorage.getItem("pcl.pool");
+  if(savedPool && [...$("pool").options].some(o=>o.value===savedPool)) $("pool").value=savedPool;
+  updatePoolPill();
+}
+function fillPools(){
+  const prop=$("property").value;
+  const list=POOLS.filter(p=>p.property===prop);
+  $("pool").innerHTML=list.map(p=>`<option value="${p.key}">${p.id}${p.name!==p.id?` — ${p.name}`:""}</option>`).join("");
+  updatePoolPill();
+}
+function selectedPool(){ return POOLS.find(p=>p.key===$("pool").value); }
+function updatePoolPill(){
+  const p=selectedPool();
+  $("selectedPoolPill").textContent=p?`${p.property} • ${p.id}${p.name!==p.id?` ${p.name}`:""}`:"No pool selected";
+  renderAll();
+}
+$("property").addEventListener("change",()=>{localStorage.setItem("pcl.property",$("property").value);fillPools();localStorage.setItem("pcl.pool",$("pool").value);renderAll();});
+$("pool").addEventListener("change",()=>{localStorage.setItem("pcl.pool",$("pool").value);updatePoolPill();});
+
+function num(id){const v=parseFloat($(id).value);return Number.isFinite(v)?v:null}
+function deltaClass(abs, type){
+  if(type==="ph") return abs<=.10?"good":abs<=.20?"warn":"bad";
+  return abs<=.30?"good":abs<=.50?"warn":"bad";
+}
+function updateDeltas(){
+  [["controllerPh","testPh","phDelta","ph"],["controllerFc","testFc","fcDelta","fc"]].forEach(([a,b,out,type])=>{
+    const x=num(a),y=num(b),el=$(out);
+    el.className="delta";
+    if(x===null||y===null){el.textContent="—";return}
+    const d=x-y; el.textContent=(d>=0?"+":"")+d.toFixed(2); el.classList.add(deltaClass(Math.abs(d),type));
+  });
+}
+["controllerPh","testPh","controllerFc","testFc"].forEach(id=>$(id).addEventListener("input",updateDeltas));
+$("calPerformed").addEventListener("change",()=>$("calFields").classList.toggle("hidden",!$("calPerformed").checked));
+
+function getRecords(){try{return JSON.parse(localStorage.getItem("pcl.records")||"[]")}catch{return []}}
+function saveRecords(r){localStorage.setItem("pcl.records",JSON.stringify(r))}
+function uuid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
+
+function validate(){
+  const required=["controllerPh","testPh","controllerFc","testFc","orpMv"];
+  for(const id of required){if(num(id)===null) return false}
+  return !!selectedPool();
+}
+$("saveBtn").addEventListener("click",()=>{
+  if(!validate()){toast("Complete all required readings.");return}
+  const p=selectedPool();
+  const rec={
+    id:uuid(),poolKey:p.key,property:p.property,poolId:p.id,poolName:p.name,
+    observedAt:new Date($("observedAt").value).toISOString(),createdAt:new Date().toISOString(),
+    technician:$("tech").value.trim(),
+    controllerPh:num("controllerPh"),testPh:num("testPh"),controllerFc:num("controllerFc"),testFc:num("testFc"),
+    orpMv:num("orpMv"),calPerformed:$("calPerformed").checked,phCal:$("phCal").checked,fcCal:$("fcCal").checked,
+    postPh:num("postPh"),postFc:num("postFc"),notes:$("notes").value.trim()
+  };
+  const all=getRecords(); all.push(rec); saveRecords(all);
+  localStorage.setItem("pcl.tech",rec.technician);
+  ["controllerPh","testPh","controllerFc","testFc","orpMv","postPh","postFc"].forEach(id=>$(id).value="");
+  $("notes").value="";$("calPerformed").checked=false;$("calFields").classList.add("hidden");$("phCal").checked=false;$("fcCal").checked=false;
+  $("observedAt").value=nowLocalInput(); updateDeltas(); renderAll(); toast("Spot check saved locally.");
+});
+
+function poolRecords(){
+  const key=$("pool").value;
+  return getRecords().filter(r=>r.poolKey===key).sort((a,b)=>new Date(b.observedAt)-new Date(a.observedAt));
+}
+function fmtDate(s){return new Date(s).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}
+function recCard(r,showDelete=false){
+  const ph=r.controllerPh-r.testPh,fc=r.controllerFc-r.testFc;
+  return `<div class="rowcard">
+    <div class="rowtop"><div><div class="rowtitle">${fmtDate(r.observedAt)}</div><div class="rowmeta">${r.technician||"Unknown tech"}${r.calPerformed?" • CALIBRATED":""}</div></div>
+    ${showDelete?`<button class="danger" onclick="deleteRec('${r.id}')">Delete</button>`:""}</div>
+    <div class="metrics">
+      <div class="metricbox">pH Ctrl/Test<b>${r.controllerPh.toFixed(2)} / ${r.testPh.toFixed(2)}</b><span>Δ ${ph>=0?"+":""}${ph.toFixed(2)}</span></div>
+      <div class="metricbox">FC Ctrl/Test<b>${r.controllerFc.toFixed(2)} / ${r.testFc.toFixed(2)}</b><span>Δ ${fc>=0?"+":""}${fc.toFixed(2)}</span></div>
+      <div class="metricbox">ORP<b>${Math.round(r.orpMv)} mV</b><span>${r.notes?"Notes saved":""}</span></div>
+    </div>
+  </div>`;
+}
+window.deleteRec=(id)=>{
+  if(!confirm("Delete this spot check?")) return;
+  saveRecords(getRecords().filter(r=>r.id!==id)); renderAll(); toast("Record deleted.");
+}
+function median(arr){
+  if(!arr.length)return null; const a=[...arr].sort((x,y)=>x-y),m=Math.floor(a.length/2);
+  return a.length%2?a[m]:(a[m-1]+a[m])/2;
+}
+function quartiles(arr){
+  const a=[...arr].sort((x,y)=>x-y); if(!a.length)return [null,null];
+  const q=(p)=>{const pos=(a.length-1)*p,b=Math.floor(pos),r=pos-b;return a[b+1]!==undefined?a[b]+r*(a[b+1]-a[b]):a[b]};
+  return [q(.25),q(.75)];
+}
+function renderRecent(){
+  const recs=poolRecords().slice(0,5);
+  $("recentChecks").innerHTML=recs.length?recs.map(r=>recCard(r)).join(""):`<div class="muted">No saved checks for this pool yet.</div>`;
+}
+function filteredHistory(){
+  const recs=poolRecords(); if(state.historyDays==="all") return recs;
+  const cutoff=Date.now()-state.historyDays*86400000; return recs.filter(r=>new Date(r.observedAt).getTime()>=cutoff);
+}
+function renderHistory(){
+  const recs=filteredHistory(),all=poolRecords();
+  $("historyRows").innerHTML=recs.length?recs.map(r=>recCard(r,true)).join(""):`<div class="muted">No records in this period.</div>`;
+  $("kpiChecks").textContent=all.length;
+  $("kpiLast").textContent=all.length?fmtDate(all[0].observedAt):"—";
+  const mph=median(all.map(r=>Math.abs(r.controllerPh-r.testPh)));
+  const mfc=median(all.map(r=>Math.abs(r.controllerFc-r.testFc)));
+  $("kpiPh").textContent=mph===null?"—":mph.toFixed(2);
+  $("kpiFc").textContent=mfc===null?"—":mfc.toFixed(2);
+}
+$("historyFilter").addEventListener("click",e=>{
+  if(e.target.tagName!=="BUTTON")return;
+  [...$("historyFilter").children].forEach(b=>b.classList.remove("active"));e.target.classList.add("active");
+  state.historyDays=e.target.dataset.days==="all"?"all":Number(e.target.dataset.days);renderHistory();
+});
+
+["targetFc","targetPh","fcWindow","phWindow"].forEach(id=>$(id).addEventListener("input",renderOrp));
+function renderOrp(){
+  const canvas=$("orpChart"),ctx=canvas.getContext("2d"),recs=poolRecords().filter(r=>Number.isFinite(r.testFc)&&Number.isFinite(r.testPh)&&Number.isFinite(r.orpMv));
+  ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle="#0e141c";ctx.fillRect(0,0,canvas.width,canvas.height);
+  const pad={l:62,r:20,t:20,b:48}; const w=canvas.width-pad.l-pad.r,h=canvas.height-pad.t-pad.b;
+  if(!recs.length){ctx.fillStyle="#94a3b8";ctx.font="20px system-ui";ctx.fillText("No ORP history for this pool",80,100);$("orpInsight").textContent="Save spot checks to build this pool's historical ORP profile.";return}
+  let xs=recs.map(r=>r.testFc),ys=recs.map(r=>r.orpMv),xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+  if(xmin===xmax){xmin-=.5;xmax+=.5} if(ymin===ymax){ymin-=25;ymax+=25}
+  xmin=Math.max(0,xmin-.2);xmax+=.2;ymin-=20;ymax+=20;
+  const X=x=>pad.l+(x-xmin)/(xmax-xmin)*w,Y=y=>pad.t+h-(y-ymin)/(ymax-ymin)*h;
+  ctx.strokeStyle="#273241";ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){let y=pad.t+h*i/5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+w,y);ctx.stroke()}
+  ctx.fillStyle="#94a3b8";ctx.font="14px system-ui";
+  ctx.fillText("Field-test FC (ppm)",pad.l+w/2-55,canvas.height-10);
+  ctx.save();ctx.translate(16,pad.t+h/2+35);ctx.rotate(-Math.PI/2);ctx.fillText("ORP (mV)",0,0);ctx.restore();
+  recs.forEach(r=>{
+    const ph=r.testPh;
+    ctx.fillStyle=ph<7.2?"#60a5fa":ph<7.4?"#22c55e":ph<7.6?"#f59e0b":"#ef4444";
+    ctx.beginPath();ctx.arc(X(r.testFc),Y(r.orpMv),6,0,Math.PI*2);ctx.fill();
+  });
+  const tf=num("targetFc"),tp=num("targetPh"),fw=num("fcWindow")??.25,pw=num("phWindow")??.10;
+  if(tf===null||tp===null){$("orpInsight").textContent=`${recs.length} historical sample${recs.length===1?"":"s"}. Enter target field-test FC and pH for a comparable-history estimate.`;return}
+  const matches=recs.filter(r=>Math.abs(r.testFc-tf)<=fw&&Math.abs(r.testPh-tp)<=pw);
+  if(matches.length<5){$("orpInsight").textContent=`Not enough comparable history yet — ${matches.length} of 5 minimum samples within FC ${tf-fw}–${tf+fw} ppm and pH ${(tp-pw).toFixed(2)}–${(tp+pw).toFixed(2)}.`;return}
+  const med=median(matches.map(r=>r.orpMv)),[q1,q3]=quartiles(matches.map(r=>r.orpMv));
+  $("orpInsight").innerHTML=`At field-test FC <b>${(tf-fw).toFixed(2)}–${(tf+fw).toFixed(2)} ppm</b> and pH <b>${(tp-pw).toFixed(2)}–${(tp+pw).toFixed(2)}</b>, this pool has historically recorded a median ORP of <b>${Math.round(med)} mV</b> (n=${matches.length}). Middle 50%: <b>${Math.round(q1)}–${Math.round(q3)} mV</b>.<br><span class="muted">Site-specific historical relationship; not a universal ORP target.</span>`;
+}
+function renderAll(){renderRecent();renderHistory();renderOrp()}
+function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";setTimeout(()=>t.style.display="none",1800)}
+
+document.querySelector("nav").addEventListener("click",e=>{
+  if(e.target.tagName!=="BUTTON")return; const view=e.target.dataset.view;
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b===e.target));
+  ["spot","history","orp"].forEach(v=>$("view-"+v).classList.toggle("hidden",v!==view));
+  if(view==="orp") setTimeout(renderOrp,10);
+});
+loadPrefs();initSelectors();renderAll();
+if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(console.error));
+</script>
+</body>
+</html>
