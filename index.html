@@ -396,5 +396,142 @@ document.querySelector("nav").addEventListener("click",e=>{
 loadPrefs();initSelectors();renderAll();
 if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(console.error));
 </script>
+
+<script>
+/* v2: IndexedDB + Supabase durable/shared storage layer.
+   localStorage remains only as a fast UI mirror for the existing prototype UI. */
+const PCL_SB_URL="https://eseqjmcsdwqyohmoabnq.supabase.co";
+const PCL_SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZXFqbWNzZHdxeW9obW9hYm5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MjUxMTIsImV4cCI6MjEwNDIwMTExMn0.PIqeyV12we4gCuyFXYwcN9-tCgc-rIhYud2DuUhxqlQ";
+let pclSyncing=false;
+
+function pclDB(){
+  return new Promise((resolve,reject)=>{
+    const q=indexedDB.open("poolCalibrationDB",1);
+    q.onupgradeneeded=()=>{
+      const db=q.result;
+      if(!db.objectStoreNames.contains("records")){
+        const s=db.createObjectStore("records",{keyPath:"id"});
+        s.createIndex("syncStatus","syncStatus");
+      }
+    };
+    q.onsuccess=()=>resolve(q.result); q.onerror=()=>reject(q.error);
+  });
+}
+async function pclAll(){
+  const db=await pclDB();
+  return new Promise((res,rej)=>{
+    const q=db.transaction("records","readonly").objectStore("records").getAll();
+    q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);
+  });
+}
+async function pclPut(r){
+  const db=await pclDB();
+  return new Promise((res,rej)=>{
+    const q=db.transaction("records","readwrite").objectStore("records").put(r);
+    q.onsuccess=()=>res(); q.onerror=()=>rej(q.error);
+  });
+}
+async function pclPutMany(rows){ for(const r of rows) await pclPut(r); }
+
+function pclHeaders(extra={}){
+  return {apikey:PCL_SB_KEY,Authorization:`Bearer ${PCL_SB_KEY}`,"Content-Type":"application/json",...extra};
+}
+function pclToRemote(r){
+  return {
+    id:r.id,pool_key:r.poolKey,property:r.property,pool_id:r.poolId,pool_name:r.poolName,
+    observed_at:r.observedAt,technician:r.technician||null,
+    controller_ph:r.controllerPh,test_ph:r.testPh,controller_fc:r.controllerFc,test_fc:r.testFc,
+    orp_mv:r.orpMv,calibration_performed:!!r.calPerformed,ph_calibrated:!!r.phCal,
+    fc_calibrated:!!r.fcCal,post_calibration_ph:r.postPh,post_calibration_fc:r.postFc,
+    notes:r.notes||null,device_id:r.deviceId||null
+  };
+}
+function pclFromRemote(r){
+  return {
+    id:r.id,poolKey:r.pool_key,property:r.property,poolId:r.pool_id,poolName:r.pool_name,
+    observedAt:r.observed_at,createdAt:r.created_at,technician:r.technician||"",
+    controllerPh:Number(r.controller_ph),testPh:Number(r.test_ph),
+    controllerFc:Number(r.controller_fc),testFc:Number(r.test_fc),orpMv:Number(r.orp_mv),
+    calPerformed:!!r.calibration_performed,phCal:!!r.ph_calibrated,fcCal:!!r.fc_calibrated,
+    postPh:r.post_calibration_ph==null?null:Number(r.post_calibration_ph),
+    postFc:r.post_calibration_fc==null?null:Number(r.post_calibration_fc),
+    notes:r.notes||"",deviceId:r.device_id||null,syncStatus:"synced"
+  };
+}
+function pclSetBadge(){
+  const el=document.querySelector(".pill.local");
+  if(!el) return;
+  pclAll().then(rows=>{
+    const n=rows.filter(r=>r.syncStatus!=="synced").length;
+    el.textContent=!navigator.onLine?`OFFLINE${n?` • ${n} WAITING`:""}`:
+      pclSyncing?`SYNCING${n?` • ${n}`:""}`:n?`ONLINE • ${n} UNSYNCED`:"ONLINE • ALL SYNCED";
+  }).catch(()=>{});
+}
+async function pclPush(r){
+  const u=`${PCL_SB_URL}/rest/v1/spot_checks?on_conflict=id`;
+  const resp=await fetch(u,{method:"POST",headers:pclHeaders({Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(pclToRemote(r))});
+  if(!resp.ok) throw new Error(await resp.text());
+  r.syncStatus="synced"; await pclPut(r);
+}
+async function pclPull(){
+  const resp=await fetch(`${PCL_SB_URL}/rest/v1/spot_checks?select=*&order=observed_at.desc`,{headers:pclHeaders()});
+  if(!resp.ok) throw new Error(await resp.text());
+  const remote=(await resp.json()).map(pclFromRemote);
+  const local=await pclAll(), pending=new Map(local.filter(r=>r.syncStatus!=="synced").map(r=>[r.id,r]));
+  for(const r of remote) if(!pending.has(r.id)) await pclPut(r);
+}
+async function pclRefreshMirror(){
+  const rows=(await pclAll()).sort((a,b)=>new Date(a.observedAt)-new Date(b.observedAt));
+  localStorage.setItem("pcl.records",JSON.stringify(rows));
+  if(typeof renderAll==="function") renderAll();
+}
+async function pclSync(){
+  if(pclSyncing||!navigator.onLine){pclSetBadge();return}
+  pclSyncing=true;pclSetBadge();
+  try{
+    const rows=await pclAll();
+    for(const r of rows.filter(x=>x.syncStatus!=="synced")){
+      try{ await pclPush(r); }catch(e){ r.syncStatus="error"; await pclPut(r); console.error("Sync push",e); }
+    }
+    await pclPull();
+    await pclRefreshMirror();
+  }catch(e){console.error("Sync",e)}
+  pclSyncing=false;pclSetBadge();
+}
+
+/* Replace the prototype save routine: UI mirror + IndexedDB first, cloud second. */
+const pclOriginalSaveRecords=saveRecords;
+saveRecords=function(rows){
+  localStorage.setItem("pcl.records",JSON.stringify(rows));
+  (async()=>{
+    const existing=new Map((await pclAll()).map(r=>[r.id,r]));
+    for(const row of rows){
+      const prior=existing.get(row.id);
+      if(prior && prior.syncStatus==="synced") row.syncStatus="synced";
+      else row.syncStatus=row.syncStatus||"pending";
+      row.deviceId=row.deviceId||localStorage.getItem("pcl.deviceId")||(crypto.randomUUID?crypto.randomUUID():String(Date.now()));
+      localStorage.setItem("pcl.deviceId",row.deviceId);
+      await pclPut(row);
+    }
+    pclSetBadge(); pclSync();
+  })();
+};
+
+/* On first v2 load, migrate any surviving v1 local records into IndexedDB, then sync. */
+(async()=>{
+  try{
+    const legacy=JSON.parse(localStorage.getItem("pcl.records")||"[]");
+    const current=new Map((await pclAll()).map(r=>[r.id,r]));
+    for(const r of legacy){
+      if(!current.has(r.id)){r.syncStatus="pending";await pclPut(r);}
+    }
+    await pclRefreshMirror();
+    await pclSync();
+  }catch(e){console.error("Startup storage migration",e)}
+})();
+window.addEventListener("online",pclSync);
+window.addEventListener("offline",pclSetBadge);
+</script>
+
 </body>
 </html>
