@@ -25,3 +25,10 @@ Adds a shared **Pulsar Feeder Cleaning** module.
 The page now displays `v4.1` beside the app title and at the bottom of the page.
 The service worker uses a new cache ID and network-first navigation so a newly
 deployed GitHub Pages build should not remain stuck on an older cached index.
+
+## v5.1
+- Property/Pool calibration selector is hidden while Feeder Cleaning is active.
+- Feed Down and Cleaning reports are combined into one Share Status Report.
+- Status report groups feeders into Feeding Down, Cleaned, and Due / Not Yet Fed Down.
+- As a feeder is cleaned it automatically moves from Feeding Down to Cleaned in subsequent reports.
+- Finalize Session shares the same unified status report.
