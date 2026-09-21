@@ -122,12 +122,14 @@
 
 .team-update-actions.single{grid-template-columns:1fr}
 body.feeder-view #calibrationPoolSelector{display:none!important}
+
+.cal-target{margin-top:9px;padding:7px 9px;border-radius:8px;background:rgba(77,163,255,.08);border:1px solid rgba(77,163,255,.22);color:#b9d9ff;font-size:12px;font-weight:750}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v5.1</span></div>
+    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v5.2</span></div>
     <div class="subrow">
       <span class="pill local">LOCAL TEST MODE</span>
       <span class="pill" id="selectedPoolPill">No pool selected</span>
@@ -252,7 +254,7 @@ body.feeder-view #calibrationPoolSelector{display:none!important}
       <div class="card fc-top">
         <div class="feeder-head">
           <div><div class="muted">Pulsar preventive maintenance</div><h2 style="margin:3px 0 0">Feeder Cleaning</h2></div>
-          <span class="version-badge">v5.1</span>
+          <span class="version-badge">v5.2</span>
         </div>
         <label style="margin-top:14px">Working as</label>
         <select id="fcWorkingTech"></select>
@@ -327,6 +329,13 @@ body.feeder-view #calibrationPoolSelector{display:none!important}
 <div class="toast" id="toast"></div>
 
 <script>
+function calibrationTargetLine(r){
+ const p=(r.ph_calibrated && r.post_calibration_ph!==null && r.post_calibration_ph!==undefined && r.post_calibration_ph!=="") ? `pH → ${Number(r.post_calibration_ph).toFixed(2)}` : "";
+ const f=(r.fc_calibrated && r.post_calibration_fc!==null && r.post_calibration_fc!==undefined && r.post_calibration_fc!=="") ? `FC → ${Number(r.post_calibration_fc).toFixed(2)} ppm` : "";
+ const a=[p,f].filter(Boolean);
+ return a.length?`<div class="cal-target">Calibrated to: ${a.join(" • ")}</div>`:"";
+}
+
 const POOLS = [
   ["Aquatica","501","Cutback Cove"],["Aquatica","502","Big Surf Shores"],["Aquatica","503","Omaka Rocka"],
   ["Aquatica","504","Katas Kookaburra"],["Aquatica","505","Roa's Rapids"],["Aquatica","506","Whanau Way"],
@@ -433,7 +442,7 @@ function recCard(r,showDelete=false){
       <div class="metricbox">pH Ctrl/Test<b>${r.controllerPh.toFixed(2)} / ${r.testPh.toFixed(2)}</b><span>Δ ${ph>=0?"+":""}${ph.toFixed(2)}</span></div>
       <div class="metricbox">FC Ctrl/Test<b>${r.controllerFc.toFixed(2)} / ${r.testFc.toFixed(2)}</b><span>Δ ${fc>=0?"+":""}${fc.toFixed(2)}</span></div>
       <div class="metricbox">ORP<b>${Math.round(r.orpMv)} mV</b><span>${r.notes?"Notes saved":""}</span></div>
-    </div>
+    </div>${calibrationTargetLine(r)}
   </div>`;
 }
 window.deleteRec=(id)=>{
@@ -654,7 +663,7 @@ window.addEventListener("offline",pclSetBadge);
 
 
 <script>
-/* Pulsar Feeder Cleaning v5.1 — session workflow */
+/* Pulsar Feeder Cleaning v5.2 — session workflow */
 const FC_FEEDERS=[
 ["Aquatica","501","Cutback Cove",4],["Aquatica","502","Big Surf Shores",4],["Aquatica","503","Omaka Rocka",1],["Aquatica","504","Katas Kookaburra",2],["Aquatica","505","Roa's Rapids",10],["Aquatica","506","Whanau Way",1],["Aquatica","507","Walkabout Waters",4],["Aquatica","508","Ray Rush/Whahalla Wave",2],["Aquatica","509","Loggerhead/Tassie",4],["Aquatica","510","Dolphin Plunge",1],["Aquatica","520","Ihu Breakaway Falls",1],["Aquatica","530","Taumata Racer",1],["Aquatica","540","KareKareKurl",1],["Aquatica","550","Riptide",1],
 ["Discovery Cove","Tropical River","Tropical River/Resort Pool",8],["Discovery Cove","Oasis","Freshwater Oasis",6],
