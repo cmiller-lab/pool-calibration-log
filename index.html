@@ -95,12 +95,27 @@
     .feeder-note{margin-top:6px;padding:7px 9px;border-radius:8px;background:#2b2413;color:#ffd995;font-size:12px}
     .feeder-kpis .v{font-size:20px}
 
+
+:root{--s1:#4da3ff;--s2:#b982ff}
+.feeder-item.session1{border-left:5px solid var(--s1)}
+.feeder-item.session2{border-left:5px solid var(--s2)}
+.session-badge{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:850;margin-left:7px}
+.session-badge.s1{border:1px solid var(--s1);color:#a9d4ff;background:rgba(77,163,255,.10)}
+.session-badge.s2{border:1px solid var(--s2);color:#d8baff;background:rgba(185,130,255,.10)}
+.session-tabs button[data-session="1"].active{border-color:var(--s1);box-shadow:inset 0 -3px 0 var(--s1)}
+.session-tabs button[data-session="2"].active{border-color:var(--s2);box-shadow:inset 0 -3px 0 var(--s2)}
+.team-update-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 16px}
+.btn.danger{background:#35191c;color:#ffb5ba;border:1px solid #7e3037}
+
+.app-title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.app-title-row h1{margin-bottom:0}
+.version-badge{display:inline-flex;align-items:center;border:1px solid #4da3ff;background:rgba(77,163,255,.12);color:#a9d4ff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:850;letter-spacing:.03em}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <h1>Pool Calibration Log</h1>
+    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v4.1</span></div>
     <div class="subrow">
       <span class="pill local">LOCAL TEST MODE</span>
       <span class="pill" id="selectedPoolPill">No pool selected</span>
@@ -228,7 +243,7 @@
             <div class="muted">Pulsar cleaning schedule</div>
             <h2 id="fcMonthTitle" style="margin:3px 0 0;font-size:20px"></h2>
           </div>
-          <button class="smallbtn" id="fcEditSchedule">Schedule</button>
+          <div style="display:flex;gap:7px"><button class="smallbtn" id="fcTechsBtn">Techs</button><button class="smallbtn" id="fcEditSchedule">Schedule</button></div>
         </div>
         <div class="session-tabs">
           <button data-session="1" class="active">Session 1</button>
@@ -254,7 +269,10 @@
           <button data-fprop="SeaWorld">SW</button>
           <button data-fprop="Discovery Cove">DC</button>
         </div>
-        <div id="fcQueue"></div>
+        <div class="team-update-actions">
+<button class="btn secondary" id="fcShareUpdate">Share Team Update</button>
+<button class="btn secondary" id="fcCopyUpdate">Copy Update</button>
+</div><div id="fcQueue"></div>
       </div>
     </section>
 
@@ -267,10 +285,15 @@
           </div>
           <button class="smallbtn" id="fcModalClose">Close</button>
         </div>
-        <div class="status-actions">
-          <button id="fcFeedDownBtn" class="secondary">Mark Feed Down</button>
-          <button id="fcCleanBtn" class="primary">Mark Cleaned</button>
-        </div>
+        <div class="grid2" style="margin-top:14px">
+<div><label>Feed Down by</label><select id="fcFeedTech"></select></div>
+<div><label>Cleaned by</label><select id="fcCleanTech"></select></div>
+</div>
+<div class="status-actions">
+<button id="fcFeedDownBtn" class="secondary">Mark Feed Down</button>
+<button id="fcCleanBtn" class="primary">Mark Cleaned</button>
+</div>
+<button class="btn danger" id="fcResetBtn" style="margin-top:10px">Reset to Due</button>
         <label style="margin-top:14px">Quick note / equipment issue</label>
         <textarea id="fcNote" placeholder="e.g. Needs new discharge valve, lid broken"></textarea>
         <button class="btn secondary" id="fcSaveNote">Save Note</button>
@@ -292,7 +315,13 @@
       </div>
     </div>
 
-  </main>
+  </main><div style="text-align:center;color:var(--muted);font-size:11px;padding:10px 10px 95px">Pool Calibration Log • v4.1 • Feeder Workflow</div>
+<div id="fcTechModal" class="modal hidden"><div class="modal-sheet">
+<div class="modal-title-row"><h2 style="margin:0">Technicians</h2><button class="smallbtn" id="fcTechClose">Close</button></div>
+<p class="muted">One name per line. Saved on this device for quick selection.</p>
+<textarea id="fcTechList" style="min-height:180px"></textarea>
+<button class="btn primary" id="fcSaveTechs">Save Technician List</button>
+</div></div>
 </div>
 
 <nav>
@@ -714,8 +743,8 @@ function fcRender(){
        pp.map(x=>{
          const r=x.record, status=r?.cleaned_at?"Cleaned":r?.feed_down_at?"Feed Down":"Due";
          const cls=r?.cleaned_at?"done":r?.feed_down_at?"feed":"";
-         return `<div class="feeder-item" onclick="fcOpen('${x.feeder_key.replaceAll("'","\\'")}')">
-           <div><div class="feeder-id">${x.feeder_id} ${r?.note?.trim()?'<span class="issue-dot">●</span>':""}</div>
+         return `<div class="feeder-item session${x.default_session}" onclick="fcOpen('${x.feeder_key.replaceAll("'","\\'")}')">
+           <div><div class="feeder-id">${x.feeder_id}<span class="session-badge s${x.default_session}">S${x.default_session}</span> ${r?.note?.trim()?'<span class="issue-dot">●</span>':""}</div>
            <div class="feeder-sub">${r?.cleaned_at?`Cleaned ${fcFmtDate(r.cleaned_at)}${r.cleaned_by?` · ${r.cleaned_by}`:""}`:r?.feed_down_at?`Feed down ${fcFmtDate(r.feed_down_at)}`:`Session ${x.default_session}`}</div>
            ${r?.note?.trim()?`<div class="feeder-note">${r.note}</div>`:""}</div>
            <button class="statebtn ${cls}">${status}</button></div>`;
@@ -766,6 +795,22 @@ window.deleteRec=async function(id){
    await pclRefreshMirror();toast("Record deleted from shared history.");
  }catch(e){console.error(e);toast("Delete failed — record kept.");}
 };
+
+
+const FC_DEFAULT_TECHS=["Cory","Lucas","Calvin"];
+function fcTechs(){try{const a=JSON.parse(localStorage.getItem("pcl.feederTechs")||"null");if(Array.isArray(a)&&a.length)return a}catch(e){}return FC_DEFAULT_TECHS}
+function fcFillTechs(){const last=localStorage.getItem("pcl.lastFeederTech")||"";["fcFeedTech","fcCleanTech"].forEach(id=>{const el=document.getElementById(id);el.innerHTML='<option value="">Select technician…</option>'+fcTechs().map(t=>`<option ${t===last?"selected":""}>${t}</option>`).join("")})}
+function fcSelectedTech(id){const v=document.getElementById(id).value;if(!v){toast("Select a technician first.");return null}localStorage.setItem("pcl.lastFeederTech",v);return v}
+const fcOpenV3=window.fcOpen; window.fcOpen=function(key){fcOpenV3(key);fcFillTechs()};
+document.getElementById("fcFeedDownBtn").onclick=()=>{const tech=fcSelectedTech("fcFeedTech");if(tech)fcUpsert({feed_down_at:new Date().toISOString(),feed_down_by:tech})};
+document.getElementById("fcCleanBtn").onclick=()=>{const tech=fcSelectedTech("fcCleanTech");if(tech)fcUpsert({cleaned_at:new Date().toISOString(),cleaned_by:tech})};
+document.getElementById("fcResetBtn").onclick=async()=>{const x=FC_STATE.selected;if(!x)return;if(!confirm(`Reset ${x.feeder_id} to Due?`))return;const r=fcRow(x.feeder_key);if(!r){toast("Already Due.");return}await fcUpsert({feed_down_at:null,feed_down_by:null,cleaned_at:null,cleaned_by:null,audit_note:[r.audit_note,`Reset ${new Date().toISOString()}`].filter(Boolean).join(" | ")})};
+document.getElementById("fcTechsBtn").onclick=()=>{document.getElementById("fcTechList").value=fcTechs().join("\n");document.getElementById("fcTechModal").classList.remove("hidden")};
+document.getElementById("fcTechClose").onclick=()=>document.getElementById("fcTechModal").classList.add("hidden");
+document.getElementById("fcSaveTechs").onclick=()=>{const n=document.getElementById("fcTechList").value.split(/\n|,/).map(x=>x.trim()).filter(Boolean);if(!n.length)return toast("Enter at least one technician.");localStorage.setItem("pcl.feederTechs",JSON.stringify([...new Set(n)]));document.getElementById("fcTechModal").classList.add("hidden");toast("Technician list saved.")};
+function fcTeamText(){let inv=fcInventory().filter(x=>FC_STATE.session==="all"||x.default_session===Number(FC_STATE.session));const rows=inv.map(x=>({...x,record:fcRow(x.feeder_key)})),clean=rows.filter(x=>x.record?.cleaned_at),feed=rows.filter(x=>x.record?.feed_down_at&&!x.record?.cleaned_at),due=rows.filter(x=>!x.record?.feed_down_at&&!x.record?.cleaned_at);const L=[`Pulsar Feeder Cleaning — ${fcMonthLabel(FC_STATE.month)}${FC_STATE.session==="all"?"":` — Session ${FC_STATE.session}`}`,`${clean.length}/${rows.length} cleaned • ${feed.length} feeding down • ${due.length} due`,""];function g(label,a,fn){if(!a.length)return;L.push(label.toUpperCase());["Aquatica","SeaWorld","Discovery Cove"].forEach(p=>{const q=a.filter(x=>x.property===p);if(q.length){L.push(p+":");q.forEach(x=>L.push(`• ${x.feeder_id} — ${fn(x)}`))}});L.push("")}g("Feeding Down",feed,x=>`${x.record.feed_down_by||"Unknown"}${x.record.note?` — ${x.record.note}`:""}`);g("Cleaned",clean,x=>`${x.record.cleaned_by||"Unknown"}${x.record.note?` — ${x.record.note}`:""}`);g("Remaining",due,x=>`Due — Session ${x.default_session}`);const issues=rows.filter(x=>x.record?.note?.trim());if(issues.length){L.push("EQUIPMENT NOTES");issues.forEach(x=>L.push(`• ${x.feeder_id} — ${x.record.note}`))}return L.join("\n").trim()}
+document.getElementById("fcCopyUpdate").onclick=async()=>{await navigator.clipboard.writeText(fcTeamText());toast("Team update copied.")};
+document.getElementById("fcShareUpdate").onclick=async()=>{const text=fcTeamText();if(navigator.share){try{await navigator.share({title:"Pulsar Feeder Cleaning Update",text})}catch(e){}}else{await navigator.clipboard.writeText(text);toast("Update copied.")}};
 
 fcLoad();
 </script>
