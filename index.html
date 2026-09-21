@@ -110,12 +110,22 @@
 .app-title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .app-title-row h1{margin-bottom:0}
 .version-badge{display:inline-flex;align-items:center;border:1px solid #4da3ff;background:rgba(77,163,255,.12);color:#a9d4ff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:850;letter-spacing:.03em}
+
+.fc-subtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.fc-subtabs button{padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--muted)}.fc-subtabs button.active{color:#fff;border-color:var(--accent)}
+.fc-session-title{display:flex;align-items:center;justify-content:space-between}.fc-session-dot{width:14px;height:14px;border-radius:50%;background:var(--s1)}.fc-session-dot.s2{background:var(--s2)}
+.fc-overview-table{width:100%;border-collapse:collapse;margin-top:12px}.fc-overview-table th,.fc-overview-table td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.fc-overview-table th:last-child,.fc-overview-table td:last-child{text-align:right}.fc-overview-list{font-size:11px;color:var(--muted);line-height:1.45}
+.fc-progress{height:10px;border-radius:999px;background:#202936;overflow:hidden;margin-top:12px}.fc-progress>div{height:100%;width:0;background:#4aa36b;transition:width .2s}
+.fc-hide-done{display:flex;align-items:center;gap:8px;margin:12px 0}.fc-hide-done input{width:20px;height:20px}
+.fc-row-actions{display:flex;gap:6px;align-items:center}.fc-action{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:8px 9px;border-radius:9px;font-size:12px;font-weight:800}.fc-action.feed.active{background:#3b2c12;border-color:#8c651a;color:#ffd58a}.fc-action.clean.active{background:#173824;border-color:#2b7546;color:#a6edbd}.fc-note-btn{min-width:38px}
+.fc-final-card{display:grid;gap:10px}.fc-final-card .danger{margin-top:8px}.fc-final-card button:disabled{opacity:.42}
+.fc-history-item{border:1px solid var(--line);border-radius:11px;padding:11px;margin-top:9px}.fc-history-head{display:flex;justify-content:space-between;gap:10px}.fc-complete{color:#9ae6b4;font-weight:800}
+
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v4.1</span></div>
+    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v5.0</span></div>
     <div class="subrow">
       <span class="pill local">LOCAL TEST MODE</span>
       <span class="pill" id="selectedPoolPill">No pool selected</span>
@@ -237,92 +247,75 @@
     </section>
 
     <section id="view-feeders" class="hidden">
-      <div class="card">
+      <div class="card fc-top">
         <div class="feeder-head">
-          <div>
-            <div class="muted">Pulsar cleaning schedule</div>
-            <h2 id="fcMonthTitle" style="margin:3px 0 0;font-size:20px"></h2>
-          </div>
-          <div style="display:flex;gap:7px"><button class="smallbtn" id="fcTechsBtn">Techs</button><button class="smallbtn" id="fcEditSchedule">Schedule</button></div>
+          <div><div class="muted">Pulsar preventive maintenance</div><h2 style="margin:3px 0 0">Feeder Cleaning</h2></div>
+          <span class="version-badge">v5.0</span>
         </div>
+        <label style="margin-top:14px">Working as</label>
+        <select id="fcWorkingTech"></select>
         <div class="session-tabs">
           <button data-session="1" class="active">Session 1</button>
           <button data-session="2">Session 2</button>
-          <button data-session="all">All</button>
         </div>
-        <div id="fcSessionDates" class="muted" style="margin-top:10px"></div>
-      </div>
-
-      <div class="card">
-        <div class="kpis feeder-kpis">
-          <div class="kpi"><div class="v" id="fcDue">0</div><div class="l">Due</div></div>
-          <div class="kpi"><div class="v" id="fcFeedDown">0</div><div class="l">Feed Down</div></div>
-          <div class="kpi"><div class="v" id="fcCleaned">0</div><div class="l">Cleaned</div></div>
-          <div class="kpi"><div class="v" id="fcIssues">0</div><div class="l">With Notes</div></div>
+        <div class="fc-subtabs">
+          <button data-fctab="current" class="active">Current</button>
+          <button data-fctab="history">History</button>
         </div>
       </div>
 
-      <div class="card">
-        <div class="toolbar feeder-filter">
-          <button data-fprop="all" class="active">All</button>
-          <button data-fprop="Aquatica">AQ</button>
-          <button data-fprop="SeaWorld">SW</button>
-          <button data-fprop="Discovery Cove">DC</button>
+      <div id="fcCurrent">
+        <div class="card">
+          <div class="fc-session-title"><div><div class="muted" id="fcCycleLabel"></div><h2 id="fcSessionTitle" style="margin:2px 0"></h2></div><div class="fc-session-dot"></div></div>
+          <div id="fcOverview"></div>
         </div>
-        <div class="team-update-actions">
-<button class="btn secondary" id="fcShareUpdate">Share Team Update</button>
-<button class="btn secondary" id="fcCopyUpdate">Copy Update</button>
-</div><div id="fcQueue"></div>
+
+        <div class="card">
+          <div class="kpis feeder-kpis">
+            <div class="kpi"><div class="v" id="fcDue">0</div><div class="l">Due</div></div>
+            <div class="kpi"><div class="v" id="fcFeedDown">0</div><div class="l">Feed Down</div></div>
+            <div class="kpi"><div class="v" id="fcCleaned">0</div><div class="l">Cleaned</div></div>
+            <div class="kpi"><div class="v" id="fcIssues">0</div><div class="l">Notes</div></div>
+          </div>
+          <div class="fc-progress"><div id="fcProgressBar"></div></div>
+          <div class="muted" id="fcProgressText" style="margin-top:7px"></div>
+          <div class="team-update-actions">
+            <button class="btn secondary" id="fcShareFeed">Share Feed Down Report</button>
+            <button class="btn secondary" id="fcShareClean">Share Cleaning Report</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="toolbar feeder-filter">
+            <button data-fprop="all" class="active">All</button><button data-fprop="Aquatica">AQ</button><button data-fprop="SeaWorld">SW</button><button data-fprop="Discovery Cove">DC</button>
+          </div>
+          <label class="fc-hide-done"><input type="checkbox" id="fcHideDone"> Hide cleaned feeders</label>
+          <div id="fcQueue"></div>
+        </div>
+
+        <div class="card fc-final-card">
+          <div id="fcFinalizeStatus" class="muted"></div>
+          <button class="btn primary" id="fcFinalize" disabled>Finalize Session</button>
+          <button class="btn danger" id="fcResetSession">Reset Session</button>
+        </div>
+      </div>
+
+      <div id="fcHistoryView" class="hidden">
+        <div class="card"><h2 style="margin-top:0">Cleaning History</h2><div id="fcHistoryList"></div></div>
       </div>
     </section>
-
-    <div id="fcModal" class="modal hidden">
-      <div class="modal-sheet">
-        <div class="modal-title-row">
-          <div>
-            <div class="muted" id="fcModalPool"></div>
-            <h2 id="fcModalTitle" style="margin:2px 0 0"></h2>
-          </div>
-          <button class="smallbtn" id="fcModalClose">Close</button>
-        </div>
-        <div class="grid2" style="margin-top:14px">
-<div><label>Feed Down by</label><select id="fcFeedTech"></select></div>
-<div><label>Cleaned by</label><select id="fcCleanTech"></select></div>
-</div>
-<div class="status-actions">
-<button id="fcFeedDownBtn" class="secondary">Mark Feed Down</button>
-<button id="fcCleanBtn" class="primary">Mark Cleaned</button>
-</div>
-<button class="btn danger" id="fcResetBtn" style="margin-top:10px">Reset to Due</button>
-        <label style="margin-top:14px">Quick note / equipment issue</label>
-        <textarea id="fcNote" placeholder="e.g. Needs new discharge valve, lid broken"></textarea>
-        <button class="btn secondary" id="fcSaveNote">Save Note</button>
         <div id="fcModalHistory" class="history" style="margin-top:12px"></div>
       </div>
     </div>
 
-    <div id="fcScheduleModal" class="modal hidden">
-      <div class="modal-sheet">
-        <div class="modal-title-row"><h2 style="margin:0">Cleaning Schedule</h2><button class="smallbtn" id="fcScheduleClose">Close</button></div>
-        <p class="muted">Default dates are the last two Monday–Friday work weeks associated with the month. Change them whenever operations require it.</p>
-        <div class="grid2">
-          <div><label>Session 1 start</label><input id="fcS1Start" type="date"></div>
-          <div><label>Session 1 end</label><input id="fcS1End" type="date"></div>
-          <div><label>Session 2 start</label><input id="fcS2Start" type="date"></div>
-          <div><label>Session 2 end</label><input id="fcS2End" type="date"></div>
-        </div>
-        <button class="btn primary" id="fcSaveSchedule" style="margin-top:12px">Save Schedule</button>
-      </div>
-    </div>
 
-  </main><div style="text-align:center;color:var(--muted);font-size:11px;padding:10px 10px 95px">Pool Calibration Log • v4.1 • Feeder Workflow</div>
-<div id="fcTechModal" class="modal hidden"><div class="modal-sheet">
-<div class="modal-title-row"><h2 style="margin:0">Technicians</h2><button class="smallbtn" id="fcTechClose">Close</button></div>
-<p class="muted">One name per line. Saved on this device for quick selection.</p>
-<textarea id="fcTechList" style="min-height:180px"></textarea>
-<button class="btn primary" id="fcSaveTechs">Save Technician List</button>
+<div id="fcNoteModal" class="modal hidden"><div class="modal-sheet">
+  <div class="modal-title-row"><div><div class="muted" id="fcNotePool"></div><h2 id="fcNoteTitle" style="margin:2px 0"></h2></div><button class="smallbtn" id="fcNoteClose">Close</button></div>
+  <label style="margin-top:14px">Equipment note</label>
+  <textarea id="fcNoteText" placeholder="e.g. Needs new discharge valve, lid broken"></textarea>
+  <button class="btn primary" id="fcSaveNote">Save Note</button>
+  <button class="btn danger" id="fcResetOne" style="margin-top:10px">Reset This Feeder to Due</button>
 </div></div>
-</div>
 
 <nav>
   <button data-view="spot" class="active">Spot Check</button>
@@ -656,163 +649,87 @@ window.addEventListener("offline",pclSetBadge);
 </script>
 
 
+
+
+
 <script>
-/* Pulsar Feeder Cleaning module v3 */
-const FC_FEEDERS = [
- ["Aquatica","501","Cutback Cove",4],["Aquatica","502","Big Surf Shores",4],["Aquatica","503","Omaka Rocka",1],
- ["Aquatica","504","Katas Kookaburra",2],["Aquatica","505","Roa's Rapids",10],["Aquatica","506","Whanau Way",1],
- ["Aquatica","507","Walkabout Waters",4],["Aquatica","508","Ray Rush/Whahalla Wave",2],["Aquatica","509","Loggerhead/Tassie",4],
- ["Aquatica","510","Dolphin Plunge",1],["Aquatica","520","Ihu Breakaway Falls",1],["Aquatica","530","Taumata Racer",1],
- ["Aquatica","540","KareKareKurl",1],["Aquatica","550","Riptide",1],
- ["Discovery Cove","Tropical River","Tropical River/Resort Pool",8],["Discovery Cove","Oasis","Freshwater Oasis",6],
- ["SeaWorld","Sesame","Sesame",1],["SeaWorld","IF1","Infinity Falls 1",2],["SeaWorld","IF2","Infinity Falls 2",2],
- ["SeaWorld","Kraken","Kraken",2],["SeaWorld","J2A","Journey to Atlantis",4],["SeaWorld","Manta","Manta Pond",2],
- ["SeaWorld","Pipeline","Pipeline",1]
-];
-
-/* Stable baseline for single-feeder pools. Multi-feeder pools always alternate odd/even letters.
-   Result: 65 total feeders, balanced 32/33 across sessions. */
-const FC_SINGLE_SESSION = {
- "Aquatica|503":1,"Aquatica|506":2,"Aquatica|510":1,"Aquatica|520":2,
- "Aquatica|530":1,"Aquatica|540":2,"Aquatica|550":2,
- "SeaWorld|Sesame":1,"SeaWorld|Pipeline":2
-};
-const FC_STATE={session:1,property:"all",month:new Date().toISOString().slice(0,7),rows:[],schedule:null,selected:null};
-
+/* Pulsar Feeder Cleaning v5.0 — session workflow */
+const FC_FEEDERS=[
+["Aquatica","501","Cutback Cove",4],["Aquatica","502","Big Surf Shores",4],["Aquatica","503","Omaka Rocka",1],["Aquatica","504","Katas Kookaburra",2],["Aquatica","505","Roa's Rapids",10],["Aquatica","506","Whanau Way",1],["Aquatica","507","Walkabout Waters",4],["Aquatica","508","Ray Rush/Whahalla Wave",2],["Aquatica","509","Loggerhead/Tassie",4],["Aquatica","510","Dolphin Plunge",1],["Aquatica","520","Ihu Breakaway Falls",1],["Aquatica","530","Taumata Racer",1],["Aquatica","540","KareKareKurl",1],["Aquatica","550","Riptide",1],
+["Discovery Cove","Tropical River","Tropical River/Resort Pool",8],["Discovery Cove","Oasis","Freshwater Oasis",6],
+["SeaWorld","Sesame","Sesame",1],["SeaWorld","IF1","Infinity Falls 1",2],["SeaWorld","IF2","Infinity Falls 2",2],["SeaWorld","Kraken","Kraken",2],["SeaWorld","J2A","Journey to Atlantis",4],["SeaWorld","Manta","Manta Pond",2],["SeaWorld","Pipeline","Pipeline",1]];
+const FC_SINGLE={"Aquatica|503":1,"Aquatica|506":2,"Aquatica|510":1,"Aquatica|520":2,"Aquatica|530":1,"Aquatica|540":2,"Aquatica|550":2,"SeaWorld|Sesame":1,"SeaWorld|Pipeline":2};
+const FC={session:1,property:"all",tab:"current",rows:[],cycles:[],selected:null,month:new Date().toISOString().slice(0,7)};
 function fcLetters(n){return Array.from({length:n},(_,i)=>String.fromCharCode(65+i))}
-function fcSession(prop,pool,n,letter){
- if(n===1) return FC_SINGLE_SESSION[`${prop}|${pool}`]||1;
- return ((letter.charCodeAt(0)-65)%2===0)?1:2;
-}
-function fcInventory(){
- return FC_FEEDERS.flatMap(([property,pool,name,count])=>fcLetters(count).map(letter=>({
-   feeder_key:`${property}|${pool}|${letter}`,property,pool,pool_name:name,letter,
-   feeder_id:`${pool}-${letter}`,default_session:fcSession(property,pool,count,letter)
- })));
-}
-function fcH(extra={}){return {"apikey":PCL_SB_KEY,"Authorization":`Bearer ${PCL_SB_KEY}`,"Content-Type":"application/json",...extra}}
-function fcFmtDate(s){return s?new Date(s).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):""}
-function fcMonthLabel(m){const [y,mo]=m.split("-").map(Number);return new Date(y,mo-1,1).toLocaleDateString([],{month:"long",year:"numeric"})}
-function fcDefaultSchedule(month){
- const [y,m]=month.split("-").map(Number);
- const last=new Date(y,m,0);
- let fri=new Date(last); while(fri.getDay()!==5) fri.setDate(fri.getDate()-1);
- const s2e=new Date(fri),s2s=new Date(fri);s2s.setDate(s2e.getDate()-4);
- const s1e=new Date(s2s);s1e.setDate(s1e.getDate()-3);
- const s1s=new Date(s1e);s1s.setDate(s1e.getDate()-4);
- const iso=d=>{const x=new Date(d);x.setMinutes(x.getMinutes()-x.getTimezoneOffset());return x.toISOString().slice(0,10)};
- return {month,session_1_start:iso(s1s),session_1_end:iso(s1e),session_2_start:iso(s2s),session_2_end:iso(s2e)};
-}
+function fcSess(p,id,n,l){return n===1?(FC_SINGLE[p+"|"+id]||1):(((l.charCodeAt(0)-65)%2===0)?1:2)}
+function fcInv(){return FC_FEEDERS.flatMap(([property,pool,pool_name,n])=>fcLetters(n).map(letter=>({feeder_key:`${property}|${pool}|${letter}`,property,pool,pool_name,letter,feeder_id:`${pool}-${letter}`,session:fcSess(property,pool,n,letter)})))}
+function fcHeaders(extra={}){return {"apikey":PCL_SB_KEY,"Authorization":`Bearer ${PCL_SB_KEY}`,"Content-Type":"application/json",...extra}}
+function fcRow(k){return FC.rows.find(r=>r.feeder_key===k)}
+function fcTechs(){try{let a=JSON.parse(localStorage.getItem("pcl.feederTechs")||"null");if(a?.length)return a}catch(e){}return ["Cory","Lucas","Calvin"]}
+function fcTech(){return document.getElementById("fcWorkingTech").value}
+function fcCycleName(){return new Date(FC.month+"-01T12:00:00").toLocaleDateString([],{month:"long",year:"numeric"})}
+function fcFillTech(){const e=document.getElementById("fcWorkingTech"),last=localStorage.getItem("pcl.lastFeederTech")||"";e.innerHTML='<option value="">Select technician…</option>'+fcTechs().map(t=>`<option ${t===last?"selected":""}>${t}</option>`).join("");e.onchange=()=>localStorage.setItem("pcl.lastFeederTech",e.value)}
 async function fcLoad(){
  try{
-   const r=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?month=eq.${FC_STATE.month}&select=*`,{headers:fcH()});
-   FC_STATE.rows=r.ok?await r.json():[];
-   const s=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleaning_schedules?month=eq.${FC_STATE.month}&select=*`,{headers:fcH()});
-   const sr=s.ok?await s.json():[];
-   FC_STATE.schedule=sr[0]||fcDefaultSchedule(FC_STATE.month);
- }catch(e){
-   console.error(e); FC_STATE.rows=[]; FC_STATE.schedule=fcDefaultSchedule(FC_STATE.month);
- }
+  let a=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?month=eq.${FC.month}&select=*`,{headers:fcHeaders()});FC.rows=a.ok?await a.json():[];
+  let b=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleaning_cycles?select=*&order=finalized_at.desc`,{headers:fcHeaders()});FC.cycles=b.ok?await b.json():[];
+ }catch(e){console.error(e)}
  fcRender();
 }
-function fcRow(key){return FC_STATE.rows.find(r=>r.feeder_key===key)}
+function fcSessionInv(){return fcInv().filter(x=>x.session===FC.session)}
 function fcRender(){
- const root=document.getElementById("fcQueue");if(!root)return;
- document.getElementById("fcMonthTitle").textContent=fcMonthLabel(FC_STATE.month);
- const s=FC_STATE.schedule||fcDefaultSchedule(FC_STATE.month);
- const ss=FC_STATE.session;
- document.getElementById("fcSessionDates").textContent=ss==="all"?
-   `Session 1: ${s.session_1_start}–${s.session_1_end} • Session 2: ${s.session_2_start}–${s.session_2_end}`:
-   `Session ${ss}: ${s[`session_${ss}_start`]} – ${s[`session_${ss}_end`]}`;
- let inv=fcInventory().filter(x=>ss==="all"||x.default_session===Number(ss));
- if(FC_STATE.property!=="all")inv=inv.filter(x=>x.property===FC_STATE.property);
- const rows=inv.map(x=>({...x,record:fcRow(x.feeder_key)}));
- document.getElementById("fcDue").textContent=rows.length;
- document.getElementById("fcFeedDown").textContent=rows.filter(x=>x.record?.feed_down_at&&!x.record?.cleaned_at).length;
- document.getElementById("fcCleaned").textContent=rows.filter(x=>x.record?.cleaned_at).length;
- document.getElementById("fcIssues").textContent=rows.filter(x=>x.record?.note?.trim()).length;
+ if(!document.getElementById("fcQueue"))return;
+ fcFillTech();
+ document.getElementById("fcCycleLabel").textContent=fcCycleName();
+ document.getElementById("fcSessionTitle").textContent=`Session ${FC.session}`;
+ document.querySelector(".fc-session-dot").classList.toggle("s2",FC.session===2);
+ let all=fcSessionInv(), visible=FC.property==="all"?all:all.filter(x=>x.property===FC.property);
+ if(document.getElementById("fcHideDone").checked)visible=visible.filter(x=>!fcRow(x.feeder_key)?.cleaned_at);
+ const enriched=all.map(x=>({...x,r:fcRow(x.feeder_key)}));
+ const due=enriched.filter(x=>!x.r?.feed_down_at&&!x.r?.cleaned_at),feed=enriched.filter(x=>x.r?.feed_down_at&&!x.r?.cleaned_at),clean=enriched.filter(x=>x.r?.cleaned_at),issues=enriched.filter(x=>x.r?.note?.trim());
+ fcText("fcDue",due.length);fcText("fcFeedDown",feed.length);fcText("fcCleaned",clean.length);fcText("fcIssues",issues.length);
+ document.getElementById("fcProgressBar").style.width=`${all.length?clean.length/all.length*100:0}%`;
+ fcText("fcProgressText",`${clean.length} / ${all.length} cleaned • ${feed.length} feeding down`);
  const props=["Aquatica","SeaWorld","Discovery Cove"];
- root.innerHTML=props.map(prop=>{
-   const pr=rows.filter(x=>x.property===prop);if(!pr.length)return "";
-   const done=pr.filter(x=>x.record?.cleaned_at).length;
-   const pools=[...new Set(pr.map(x=>x.pool))];
-   return `<div class="property-group"><div class="property-title"><span>${prop}</span><span class="muted">${done}/${pr.length} cleaned</span></div>`+
-     pools.map(pool=>{
-       const pp=pr.filter(x=>x.pool===pool),name=pp[0].pool_name;
-       return `<div class="feeder-pool"><div class="feeder-pool-head">${pool}${name!==pool?` — ${name}`:""}</div>`+
-       pp.map(x=>{
-         const r=x.record, status=r?.cleaned_at?"Cleaned":r?.feed_down_at?"Feed Down":"Due";
-         const cls=r?.cleaned_at?"done":r?.feed_down_at?"feed":"";
-         return `<div class="feeder-item session${x.default_session}" onclick="fcOpen('${x.feeder_key.replaceAll("'","\\'")}')">
-           <div><div class="feeder-id">${x.feeder_id}<span class="session-badge s${x.default_session}">S${x.default_session}</span> ${r?.note?.trim()?'<span class="issue-dot">●</span>':""}</div>
-           <div class="feeder-sub">${r?.cleaned_at?`Cleaned ${fcFmtDate(r.cleaned_at)}${r.cleaned_by?` · ${r.cleaned_by}`:""}`:r?.feed_down_at?`Feed down ${fcFmtDate(r.feed_down_at)}`:`Session ${x.default_session}`}</div>
-           ${r?.note?.trim()?`<div class="feeder-note">${r.note}</div>`:""}</div>
-           <button class="statebtn ${cls}">${status}</button></div>`;
-       }).join("")+`</div>`;
-     }).join("")+`</div>`;
- }).join("") || `<div class="muted">No feeders in this filter.</div>`;
+ document.getElementById("fcOverview").innerHTML=`<table class="fc-overview-table"><thead><tr><th>Property</th><th>Feeders</th><th>#</th></tr></thead><tbody>`+props.map(p=>{let q=all.filter(x=>x.property===p);return `<tr><td>${p}</td><td class="fc-overview-list">${q.map(x=>x.feeder_id).join(", ")}</td><td>${q.length}</td></tr>`}).join("")+`<tr><th>Total</th><td></td><th>${all.length}</th></tr></tbody></table>`;
+ document.getElementById("fcQueue").innerHTML=props.map(p=>{let q=visible.filter(x=>x.property===p);if(!q.length)return"";let pools=[...new Set(q.map(x=>x.pool))];return `<div class="property-group"><div class="property-title">${p}</div>`+pools.map(pool=>{let z=q.filter(x=>x.pool===pool);return `<div class="feeder-pool session${FC.session}"><div class="feeder-pool-head">${pool}${z[0].pool_name!==pool?` — ${z[0].pool_name}`:""}</div>`+z.map(x=>fcRowHTML(x)).join("")+`</div>`}).join("")+`</div>`}).join("")||'<div class="muted">No unfinished feeders in this filter.</div>';
+ const complete=clean.length===all.length&&all.length>0, finalized=FC.cycles.some(c=>c.month===FC.month&&Number(c.session)===FC.session);
+ document.getElementById("fcFinalize").disabled=!complete||finalized;
+ fcText("fcFinalizeStatus",finalized?`✓ ${fcCycleName()} Session ${FC.session} finalized.`:complete?`✓ ${all.length}/${all.length} cleaned. Ready to finalize.`:`Finalize unlocks when all ${all.length} feeders are cleaned.`);
+ fcRenderHistory();
 }
-window.fcOpen=function(key){
- const x=fcInventory().find(v=>v.feeder_key===key);if(!x)return;FC_STATE.selected=x;
- const r=fcRow(key);document.getElementById("fcModalPool").textContent=`${x.property} • ${x.pool_name}`;
- document.getElementById("fcModalTitle").textContent=x.feeder_id;document.getElementById("fcNote").value=r?.note||"";
- document.getElementById("fcFeedDownBtn").textContent=r?.feed_down_at?"✓ Feed Down":"Mark Feed Down";
- document.getElementById("fcCleanBtn").textContent=r?.cleaned_at?"✓ Cleaned":"Mark Cleaned";
- document.getElementById("fcModalHistory").innerHTML=r?`<div class="rowcard"><div class="rowmeta">${r.feed_down_at?`Feed down: ${fcFmtDate(r.feed_down_at)}${r.feed_down_by?` · ${r.feed_down_by}`:""}<br>`:""}${r.cleaned_at?`Cleaned: ${fcFmtDate(r.cleaned_at)}${r.cleaned_by?` · ${r.cleaned_by}`:""}`:""}</div></div>`:"";
- document.getElementById("fcModal").classList.remove("hidden");
-}
-async function fcUpsert(patch){
- const x=FC_STATE.selected;if(!x)return;
- let r=fcRow(x.feeder_key)||{id:crypto.randomUUID(),month:FC_STATE.month,feeder_key:x.feeder_key,property:x.property,pool_id:x.pool,pool_name:x.pool_name,feeder_letter:x.letter,session:x.default_session};
+function fcText(id,v){document.getElementById(id).textContent=v}
+function fcRowHTML(x){let r=fcRow(x.feeder_key),f=!!r?.feed_down_at,c=!!r?.cleaned_at,n=!!r?.note?.trim();return `<div class="feeder-item"><div><div class="feeder-id">${x.feeder_id}${n?' <span class="issue-dot">●</span>':""}</div>${n?`<div class="feeder-note">${r.note}</div>`:""}</div><div class="fc-row-actions"><button class="fc-action feed ${f?"active":""}" onclick="fcToggleFeed('${x.feeder_key}')">${f?"✓ Feed Down":"Feed Down"}</button><button class="fc-action clean ${c?"active":""}" onclick="fcToggleClean('${x.feeder_key}')">${c?"✓ Cleaned":"Cleaned"}</button><button class="fc-action fc-note-btn" onclick="fcNote('${x.feeder_key}')">Note</button></div></div>`}
+async function fcSave(x,patch){
+ let r=fcRow(x.feeder_key)||{id:crypto.randomUUID(),month:FC.month,feeder_key:x.feeder_key,property:x.property,pool_id:x.pool,pool_name:x.pool_name,feeder_letter:x.letter,session:x.session};
  Object.assign(r,patch,{updated_at:new Date().toISOString()});
- const resp=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?on_conflict=month,feeder_key`,{method:"POST",headers:fcH({Prefer:"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(r)});
- if(!resp.ok){toast("Could not sync feeder update.");console.error(await resp.text());return}
- const saved=(await resp.json())[0];const i=FC_STATE.rows.findIndex(v=>v.feeder_key===x.feeder_key);if(i>=0)FC_STATE.rows[i]=saved;else FC_STATE.rows.push(saved);
- toast("Feeder update saved.");fcOpen(x.feeder_key);fcRender();
+ let resp=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?on_conflict=month,feeder_key`,{method:"POST",headers:fcHeaders({Prefer:"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(r)});
+ if(!resp.ok){toast("Could not save.");console.error(await resp.text());return}
+ let saved=(await resp.json())[0],i=FC.rows.findIndex(v=>v.feeder_key===x.feeder_key);if(i>=0)FC.rows[i]=saved;else FC.rows.push(saved);fcRender();
 }
-document.getElementById("fcFeedDownBtn").onclick=()=>{const t=new Date().toISOString(),tech=document.getElementById("tech").value.trim();fcUpsert({feed_down_at:t,feed_down_by:tech||null})};
-document.getElementById("fcCleanBtn").onclick=()=>{const t=new Date().toISOString(),tech=document.getElementById("tech").value.trim();fcUpsert({cleaned_at:t,cleaned_by:tech||null})};
-document.getElementById("fcSaveNote").onclick=()=>fcUpsert({note:document.getElementById("fcNote").value.trim()||null});
-document.getElementById("fcModalClose").onclick=()=>document.getElementById("fcModal").classList.add("hidden");
-document.querySelector(".session-tabs").onclick=e=>{if(e.target.tagName!=="BUTTON")return;document.querySelectorAll(".session-tabs button").forEach(b=>b.classList.toggle("active",b===e.target));FC_STATE.session=e.target.dataset.session==="all"?"all":Number(e.target.dataset.session);fcRender()};
-document.querySelector(".feeder-filter").onclick=e=>{if(e.target.tagName!=="BUTTON")return;document.querySelectorAll(".feeder-filter button").forEach(b=>b.classList.toggle("active",b===e.target));FC_STATE.property=e.target.dataset.fprop;fcRender()};
-document.getElementById("fcEditSchedule").onclick=()=>{const s=FC_STATE.schedule||fcDefaultSchedule(FC_STATE.month);["S1Start","S1End","S2Start","S2End"].forEach((k,i)=>document.getElementById("fc"+k).value=[s.session_1_start,s.session_1_end,s.session_2_start,s.session_2_end][i]);document.getElementById("fcScheduleModal").classList.remove("hidden")};
-document.getElementById("fcScheduleClose").onclick=()=>document.getElementById("fcScheduleModal").classList.add("hidden");
-document.getElementById("fcSaveSchedule").onclick=async()=>{
- const r={month:FC_STATE.month,session_1_start:document.getElementById("fcS1Start").value,session_1_end:document.getElementById("fcS1End").value,session_2_start:document.getElementById("fcS2Start").value,session_2_end:document.getElementById("fcS2End").value,updated_at:new Date().toISOString()};
- const resp=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleaning_schedules?on_conflict=month`,{method:"POST",headers:fcH({Prefer:"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(r)});
- if(resp.ok){FC_STATE.schedule=(await resp.json())[0];document.getElementById("fcScheduleModal").classList.add("hidden");toast("Schedule updated.");fcRender()}else toast("Could not save schedule.");
-};
-
-/* Proper cloud deletion for calibration records. */
-window.deleteRec=async function(id){
- if(!confirm("Delete this spot check from the shared history?"))return;
- try{
-   const resp=await fetch(`${PCL_SB_URL}/rest/v1/spot_checks?id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:pclHeaders()});
-   if(!resp.ok)throw new Error(await resp.text());
-   const db=await pclDB();await new Promise((res,rej)=>{const q=db.transaction("records","readwrite").objectStore("records").delete(id);q.onsuccess=res;q.onerror=()=>rej(q.error)});
-   localStorage.setItem("pcl.records",JSON.stringify(getRecords().filter(r=>r.id!==id)));
-   await pclRefreshMirror();toast("Record deleted from shared history.");
- }catch(e){console.error(e);toast("Delete failed — record kept.");}
-};
-
-
-const FC_DEFAULT_TECHS=["Cory","Lucas","Calvin"];
-function fcTechs(){try{const a=JSON.parse(localStorage.getItem("pcl.feederTechs")||"null");if(Array.isArray(a)&&a.length)return a}catch(e){}return FC_DEFAULT_TECHS}
-function fcFillTechs(){const last=localStorage.getItem("pcl.lastFeederTech")||"";["fcFeedTech","fcCleanTech"].forEach(id=>{const el=document.getElementById(id);el.innerHTML='<option value="">Select technician…</option>'+fcTechs().map(t=>`<option ${t===last?"selected":""}>${t}</option>`).join("")})}
-function fcSelectedTech(id){const v=document.getElementById(id).value;if(!v){toast("Select a technician first.");return null}localStorage.setItem("pcl.lastFeederTech",v);return v}
-const fcOpenV3=window.fcOpen; window.fcOpen=function(key){fcOpenV3(key);fcFillTechs()};
-document.getElementById("fcFeedDownBtn").onclick=()=>{const tech=fcSelectedTech("fcFeedTech");if(tech)fcUpsert({feed_down_at:new Date().toISOString(),feed_down_by:tech})};
-document.getElementById("fcCleanBtn").onclick=()=>{const tech=fcSelectedTech("fcCleanTech");if(tech)fcUpsert({cleaned_at:new Date().toISOString(),cleaned_by:tech})};
-document.getElementById("fcResetBtn").onclick=async()=>{const x=FC_STATE.selected;if(!x)return;if(!confirm(`Reset ${x.feeder_id} to Due?`))return;const r=fcRow(x.feeder_key);if(!r){toast("Already Due.");return}await fcUpsert({feed_down_at:null,feed_down_by:null,cleaned_at:null,cleaned_by:null,audit_note:[r.audit_note,`Reset ${new Date().toISOString()}`].filter(Boolean).join(" | ")})};
-document.getElementById("fcTechsBtn").onclick=()=>{document.getElementById("fcTechList").value=fcTechs().join("\n");document.getElementById("fcTechModal").classList.remove("hidden")};
-document.getElementById("fcTechClose").onclick=()=>document.getElementById("fcTechModal").classList.add("hidden");
-document.getElementById("fcSaveTechs").onclick=()=>{const n=document.getElementById("fcTechList").value.split(/\n|,/).map(x=>x.trim()).filter(Boolean);if(!n.length)return toast("Enter at least one technician.");localStorage.setItem("pcl.feederTechs",JSON.stringify([...new Set(n)]));document.getElementById("fcTechModal").classList.add("hidden");toast("Technician list saved.")};
-function fcTeamText(){let inv=fcInventory().filter(x=>FC_STATE.session==="all"||x.default_session===Number(FC_STATE.session));const rows=inv.map(x=>({...x,record:fcRow(x.feeder_key)})),clean=rows.filter(x=>x.record?.cleaned_at),feed=rows.filter(x=>x.record?.feed_down_at&&!x.record?.cleaned_at),due=rows.filter(x=>!x.record?.feed_down_at&&!x.record?.cleaned_at);const L=[`Pulsar Feeder Cleaning — ${fcMonthLabel(FC_STATE.month)}${FC_STATE.session==="all"?"":` — Session ${FC_STATE.session}`}`,`${clean.length}/${rows.length} cleaned • ${feed.length} feeding down • ${due.length} due`,""];function g(label,a,fn){if(!a.length)return;L.push(label.toUpperCase());["Aquatica","SeaWorld","Discovery Cove"].forEach(p=>{const q=a.filter(x=>x.property===p);if(q.length){L.push(p+":");q.forEach(x=>L.push(`• ${x.feeder_id} — ${fn(x)}`))}});L.push("")}g("Feeding Down",feed,x=>`${x.record.feed_down_by||"Unknown"}${x.record.note?` — ${x.record.note}`:""}`);g("Cleaned",clean,x=>`${x.record.cleaned_by||"Unknown"}${x.record.note?` — ${x.record.note}`:""}`);g("Remaining",due,x=>`Due — Session ${x.default_session}`);const issues=rows.filter(x=>x.record?.note?.trim());if(issues.length){L.push("EQUIPMENT NOTES");issues.forEach(x=>L.push(`• ${x.feeder_id} — ${x.record.note}`))}return L.join("\n").trim()}
-document.getElementById("fcCopyUpdate").onclick=async()=>{await navigator.clipboard.writeText(fcTeamText());toast("Team update copied.")};
-document.getElementById("fcShareUpdate").onclick=async()=>{const text=fcTeamText();if(navigator.share){try{await navigator.share({title:"Pulsar Feeder Cleaning Update",text})}catch(e){}}else{await navigator.clipboard.writeText(text);toast("Update copied.")}};
-
-fcLoad();
+window.fcToggleFeed=async k=>{let t=fcTech();if(!t)return toast("Select Working as first.");let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);await fcSave(x,r?.feed_down_at?{feed_down_at:null,feed_down_by:null}:{feed_down_at:new Date().toISOString(),feed_down_by:t})};
+window.fcToggleClean=async k=>{let t=fcTech();if(!t)return toast("Select Working as first.");let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);await fcSave(x,r?.cleaned_at?{cleaned_at:null,cleaned_by:null}:{cleaned_at:new Date().toISOString(),cleaned_by:t})};
+window.fcNote=k=>{let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);FC.selected=x;fcText("fcNotePool",`${x.property} • ${x.pool_name}`);fcText("fcNoteTitle",x.feeder_id);document.getElementById("fcNoteText").value=r?.note||"";document.getElementById("fcNoteModal").classList.remove("hidden")};
+document.getElementById("fcNoteClose").onclick=()=>document.getElementById("fcNoteModal").classList.add("hidden");
+document.getElementById("fcSaveNote").onclick=async()=>{await fcSave(FC.selected,{note:document.getElementById("fcNoteText").value.trim()||null});document.getElementById("fcNoteModal").classList.add("hidden")};
+document.getElementById("fcResetOne").onclick=async()=>{if(!confirm(`Reset ${FC.selected.feeder_id} to Due?`))return;await fcSave(FC.selected,{feed_down_at:null,feed_down_by:null,cleaned_at:null,cleaned_by:null});document.getElementById("fcNoteModal").classList.add("hidden")};
+function fcReport(kind){
+ let a=fcSessionInv().map(x=>({...x,r:fcRow(x.feeder_key)})),selected=kind==="feed"?a.filter(x=>x.r?.feed_down_at&&!x.r?.cleaned_at):a.filter(x=>x.r?.cleaned_at),label=kind==="feed"?"FEED DOWN REPORT":"CLEANING REPORT";
+ let L=[`PULSAR FEEDER CLEANING — ${label}`,`${fcCycleName()} • Session ${FC.session}`,""];
+ ["Aquatica","SeaWorld","Discovery Cove"].forEach(p=>{let q=selected.filter(x=>x.property===p);if(q.length){L.push(p.toUpperCase());q.forEach(x=>L.push(`✓ ${x.feeder_id} — ${kind==="feed"?(x.r.feed_down_by||""):(x.r.cleaned_by||"")}${x.r.note?` — ${x.r.note}`:""}`));L.push("")}});
+ let clean=a.filter(x=>x.r?.cleaned_at).length,feed=a.filter(x=>x.r?.feed_down_at&&!x.r?.cleaned_at).length;L.push(`${feed} feeding down • ${clean}/${a.length} cleaned`);
+ return L.join("\n");
+}
+async function fcShare(kind){let text=fcReport(kind);if(navigator.share){try{await navigator.share({title:"Pulsar Feeder Cleaning",text})}catch(e){}}else{await navigator.clipboard.writeText(text);toast("Report copied.")}}
+document.getElementById("fcShareFeed").onclick=()=>fcShare("feed");document.getElementById("fcShareClean").onclick=()=>fcShare("clean");
+document.getElementById("fcResetSession").onclick=async()=>{if(!confirm(`Reset ALL statuses for ${fcCycleName()} Session ${FC.session}? Notes will be retained.`))return;let rows=FC.rows.filter(r=>Number(r.session)===FC.session&&r.month===FC.month);for(const r of rows){let x=fcInv().find(v=>v.feeder_key===r.feeder_key);await fcSave(x,{feed_down_at:null,feed_down_by:null,cleaned_at:null,cleaned_by:null})}toast("Session reset.")};
+document.getElementById("fcFinalize").onclick=async()=>{let tech=fcTech();if(!tech)return toast("Select Working as first.");if(!confirm(`Finalize ${fcCycleName()} Session ${FC.session}?`))return;let body={id:crypto.randomUUID(),month:FC.month,session:FC.session,finalized_at:new Date().toISOString(),finalized_by:tech,total_feeders:fcSessionInv().length};let r=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleaning_cycles`,{method:"POST",headers:fcHeaders({Prefer:"return=representation"}),body:JSON.stringify(body)});if(!r.ok)return toast("Could not finalize.");FC.cycles.unshift((await r.json())[0]);toast("Session finalized.");fcRender();setTimeout(()=>fcShare("clean"),250)};
+document.querySelector(".session-tabs").onclick=e=>{if(e.target.tagName!=="BUTTON")return;document.querySelectorAll(".session-tabs button").forEach(b=>b.classList.toggle("active",b===e.target));FC.session=Number(e.target.dataset.session);fcRender()};
+document.querySelector(".feeder-filter").onclick=e=>{if(e.target.tagName!=="BUTTON")return;document.querySelectorAll(".feeder-filter button").forEach(b=>b.classList.toggle("active",b===e.target));FC.property=e.target.dataset.fprop;fcRender()};
+document.querySelector(".fc-subtabs").onclick=e=>{if(e.target.tagName!=="BUTTON")return;document.querySelectorAll(".fc-subtabs button").forEach(b=>b.classList.toggle("active",b===e.target));FC.tab=e.target.dataset.fctab;document.getElementById("fcCurrent").classList.toggle("hidden",FC.tab!=="current");document.getElementById("fcHistoryView").classList.toggle("hidden",FC.tab!=="history");fcRender()};
+document.getElementById("fcHideDone").onchange=fcRender;
+function fcRenderHistory(){let e=document.getElementById("fcHistoryList");if(!FC.cycles.length){e.innerHTML='<div class="muted">No finalized cleaning sessions yet.</div>';return}e.innerHTML=FC.cycles.map(c=>`<div class="fc-history-item"><div class="fc-history-head"><strong>${new Date(c.month+"-01T12:00:00").toLocaleDateString([],{month:"short",year:"numeric"})} • Session ${c.session}</strong><span class="fc-complete">Complete</span></div><div class="muted">${c.total_feeders}/${c.total_feeders} feeders • ${c.finalized_by||""} • ${new Date(c.finalized_at).toLocaleString()}</div></div>`).join("")}
+fcFillTech();fcLoad();
 </script>
 
 </body>
