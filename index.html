@@ -128,12 +128,16 @@ body.feeder-view #calibrationPoolSelector{display:none!important}
 .metric-cal-target{margin-top:5px;color:#8fc5ff;font-size:11px;font-weight:850}
 .calibration-result{grid-column:1/-1;display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px;padding:8px 10px;border:1px solid rgba(77,163,255,.32);background:rgba(77,163,255,.08);border-radius:9px;color:#b9d9ff;font-size:12px}
 .calibration-result strong{color:#e9f4ff}.calibration-result span{font-weight:850}
+
+.calibration-result{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;padding:8px 10px;border:1px solid rgba(77,163,255,.35);background:rgba(77,163,255,.09);border-radius:9px;color:#b9d9ff;font-size:12px}
+.calibration-result strong{color:#eef7ff}
+.calibration-result span{font-weight:850}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v5.3</span></div>
+    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v5.4</span></div>
     <div class="subrow">
       <span class="pill local">LOCAL TEST MODE</span>
       <span class="pill" id="selectedPoolPill">No pool selected</span>
@@ -258,7 +262,7 @@ body.feeder-view #calibrationPoolSelector{display:none!important}
       <div class="card fc-top">
         <div class="feeder-head">
           <div><div class="muted">Pulsar preventive maintenance</div><h2 style="margin:3px 0 0">Feeder Cleaning</h2></div>
-          <span class="version-badge">v5.3</span>
+          <span class="version-badge">v5.4</span>
         </div>
         <label style="margin-top:14px">Working as</label>
         <select id="fcWorkingTech"></select>
@@ -334,10 +338,12 @@ body.feeder-view #calibrationPoolSelector{display:none!important}
 
 <script>
 function calibrationTargetLine(r){
- const p=(r.ph_calibrated && r.post_calibration_ph!==null && r.post_calibration_ph!==undefined && r.post_calibration_ph!=="") ? `pH → ${Number(r.post_calibration_ph).toFixed(2)}` : "";
- const f=(r.fc_calibrated && r.post_calibration_fc!==null && r.post_calibration_fc!==undefined && r.post_calibration_fc!=="") ? `FC → ${Number(r.post_calibration_fc).toFixed(2)} ppm` : "";
- const a=[p,f].filter(Boolean);
- return a.length?`<div class="cal-target">Calibrated to: ${a.join(" • ")}</div>`:"";
+  const parts=[];
+  if(r.phCal && r.postPh !== null && r.postPh !== undefined && r.postPh !== "")
+    parts.push(`pH → ${Number(r.postPh).toFixed(2)}`);
+  if(r.fcCal && r.postFc !== null && r.postFc !== undefined && r.postFc !== "")
+    parts.push(`FC → ${Number(r.postFc).toFixed(2)} ppm`);
+  return parts.length ? `<div class="calibration-result"><strong>Calibrated to</strong>${parts.map(x=>`<span>${x}</span>`).join("")}</div>` : "";
 }
 
 const POOLS = [
@@ -440,14 +446,14 @@ function fmtDate(s){return new Date(s).toLocaleString([], {month:"short",day:"nu
 function recCard(r,showDelete=false){
   const ph=r.controllerPh-r.testPh,fc=r.controllerFc-r.testFc;
   return `<div class="rowcard">
-    <div class="rowtop"><div><div class="rowtitle">${fmtDate(r.observedAt)}</div><div class="rowmeta">${r.technician||"Unknown tech"}${r.calPerformed?" • CALIBRATED":""}</div></div>
+    <div class="rowtop"><div><div class="rowtitle">${fmtDate(r.observedAt)}</div><div class="rowmeta">${r.technician||"Unknown tech"}${r.calPerformed ? ` • CALIBRATED${r.phCal||r.fcCal ? ` (${[r.phCal?"pH":"",r.fcCal?"FC":""].filter(Boolean).join(" + ")})` : ""}` : ""}</div></div>
     ${showDelete?`<button class="danger" onclick="deleteRec('${r.id}')">Delete</button>`:""}</div>
     <div class="metrics">
       <div class="metricbox">pH Ctrl/Test<b>${r.controllerPh.toFixed(2)} / ${r.testPh.toFixed(2)}</b><span>Δ ${ph>=0?"+":""}${ph.toFixed(2)}</span></div>
       <div class="metricbox">FC Ctrl/Test<b>${r.controllerFc.toFixed(2)} / ${r.testFc.toFixed(2)}</b><span>Δ ${fc>=0?"+":""}${fc.toFixed(2)}</span></div>
       <div class="metricbox">ORP<b>${Math.round(r.orpMv)} mV</b><span>${r.notes?"Notes saved":""}</span></div>
     </div>${calibrationTargetLine(r)}
-  ${(r.ph_calibrated&&r.post_calibration_ph!=null)||(r.fc_calibrated&&r.post_calibration_fc!=null)?`<div class="calibration-result"><strong>Calibrated to</strong>${r.ph_calibrated&&r.post_calibration_ph!=null?`<span>pH ${Number(r.post_calibration_ph).toFixed(2)}</span>`:""}${r.fc_calibrated&&r.post_calibration_fc!=null?`<span>FC ${Number(r.post_calibration_fc).toFixed(2)} ppm</span>`:""}</div>`:""}</div>`;
+  </div>`;
 }
 window.deleteRec=(id)=>{
   if(!confirm("Delete this spot check?")) return;
@@ -667,7 +673,7 @@ window.addEventListener("offline",pclSetBadge);
 
 
 <script>
-/* Pulsar Feeder Cleaning v5.3 — session workflow */
+/* Pulsar Feeder Cleaning v5.4 — session workflow */
 const FC_FEEDERS=[
 ["Aquatica","501","Cutback Cove",4],["Aquatica","502","Big Surf Shores",4],["Aquatica","503","Omaka Rocka",1],["Aquatica","504","Katas Kookaburra",2],["Aquatica","505","Roa's Rapids",10],["Aquatica","506","Whanau Way",1],["Aquatica","507","Walkabout Waters",4],["Aquatica","508","Ray Rush/Whahalla Wave",2],["Aquatica","509","Loggerhead/Tassie",4],["Aquatica","510","Dolphin Plunge",1],["Aquatica","520","Ihu Breakaway Falls",1],["Aquatica","530","Taumata Racer",1],["Aquatica","540","KareKareKurl",1],["Aquatica","550","Riptide",1],
 ["Discovery Cove","Tropical River","Tropical River/Resort Pool",8],["Discovery Cove","Oasis","Freshwater Oasis",6],

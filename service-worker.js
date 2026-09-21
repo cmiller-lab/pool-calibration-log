@@ -1,4 +1,4 @@
-const CACHE="pool-cal-log-v5-3-20260921";
+const CACHE="pool-cal-log-v5-4-20260921";
 self.addEventListener("install",e=>{self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{
