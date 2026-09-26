@@ -32,3 +32,11 @@ deployed GitHub Pages build should not remain stuck on an older cached index.
 - Status report groups feeders into Feeding Down, Cleaned, and Due / Not Yet Fed Down.
 - As a feeder is cleaned it automatically moves from Feeding Down to Cleaned in subsequent reports.
 - Finalize Session shares the same unified status report.
+
+
+## v6.1
+- Feeder Cleaning automatically refreshes from Supabase whenever the tab is opened.
+- It also refreshes whenever the PWA returns to the foreground.
+- Added iOS `pageshow` handling for restored installed-PWA sessions.
+- Added a Last Refreshed indicator.
+- Refreshes use `cache: no-store`.
