@@ -150,12 +150,19 @@ body.feeder-view #fcOverviewCard,body.feeder-view #fcFinalizeCard,body.feeder-vi
 .fc-last-refresh{margin-top:7px;text-align:center;font-size:10px;color:var(--muted)}
 .fc-last-refresh.refreshing{color:#ffd487}
 .fc-last-refresh.ok{color:#9de4ba}
+
+body.feeder-view .fc-session-title,body.feeder-view .feeder-kpis,body.feeder-view .fc-progress,
+body.feeder-view #fcProgressText,body.feeder-view .fc-hide-done,body.feeder-view .fc-final-card{display:none!important}
+.fc-history-month{margin-bottom:18px}.fc-history-month h3{margin:10px 0 6px;font-size:15px}
+.fc-history-row{display:grid;grid-template-columns:1fr 1.25fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)}
+.fc-history-row small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.fc-history-row>div:nth-child(2){text-align:right}
+.fc-history-note{grid-column:1/-1;font-size:11px;padding:7px 9px;border-radius:7px;background:var(--panel2)}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v6.1</span></div>
+    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v6.2</span></div>
     <div class="subrow">
       <span class="pill local">LOCAL TEST MODE</span>
       <span class="pill" id="selectedPoolPill">No pool selected</span>
@@ -280,15 +287,9 @@ body.feeder-view #fcOverviewCard,body.feeder-view #fcFinalizeCard,body.feeder-vi
       <div class="card fc-top">
         <div class="feeder-head">
           <div><div class="muted">Pulsar preventive maintenance</div><h2 style="margin:3px 0 0">Feeder Cleaning</h2></div>
-          <span class="version-badge">v6.1</span>
+          <span class="version-badge">v6.2</span>
         </div>
-        <label style="margin-top:14px">Working as</label>
-        <select id="fcWorkingTech"></select>
-        <div class="session-tabs">
-          <button data-session="1" class="active">Session 1</button>
-          <button data-session="2">Session 2</button>
-        </div>
-        <div class="fc-subtabs">
+<div class="fc-subtabs">
           <button data-fctab="current" class="active">Current</button>
           <button data-fctab="history">History</button>
         </div>
@@ -316,7 +317,7 @@ body.feeder-view #fcOverviewCard,body.feeder-view #fcFinalizeCard,body.feeder-vi
 
         <div class="card">
           <div class="toolbar feeder-filter">
-            <button data-fprop="all" class="active">All</button><button data-fprop="Aquatica">AQ</button><button data-fprop="SeaWorld">SW</button><button data-fprop="Discovery Cove">DC</button>
+            <button data-fprop="All" class="active">All</button><button data-fprop="Aquatica">AQ</button><button data-fprop="SeaWorld">SW</button><button data-fprop="Discovery Cove">DC</button>
           </div>
           <label class="fc-hide-done"><input type="checkbox" id="fcHideDone"> Hide cleaned feeders</label>
           <div id="fcQueue"></div>
@@ -691,7 +692,7 @@ window.addEventListener("offline",pclSetBadge);
 
 
 <script>
-/* Pulsar Feeder Cleaning v6.1 — session workflow */
+/* Pulsar Feeder Cleaning v6.2 — session workflow */
 const FC_FEEDERS=[
 ["Aquatica","501","Cutback Cove",4],["Aquatica","502","Big Surf Shores",4],["Aquatica","503","Omaka Rocka",1],["Aquatica","504","Katas Kookaburra",2],["Aquatica","505","Roa's Rapids",10],["Aquatica","506","Whanau Way",1],["Aquatica","507","Walkabout Waters",4],["Aquatica","508","Ray Rush/Whahalla Wave",2],["Aquatica","509","Loggerhead/Tassie",4],["Aquatica","510","Dolphin Plunge",1],["Aquatica","520","Ihu Breakaway Falls",1],["Aquatica","530","Taumata Racer",1],["Aquatica","540","KareKareKurl",1],["Aquatica","550","Riptide",1],
 ["Discovery Cove","Tropical River","Tropical River/Resort Pool",8],["Discovery Cove","Oasis","Freshwater Oasis",6],
@@ -700,8 +701,7 @@ const FC_LEVELS=["100%","75%","50%","25%","Empty"];
 const FC={month:new Date().toISOString().slice(0,7),rows:[],property:"All"};
 function fcInv(){return FC_FEEDERS.flatMap(([property,pool,pool_name,n])=>Array.from({length:n},(_,i)=>{let letter=String.fromCharCode(65+i);return {feeder_key:`${property}|${pool}|${letter}`,property,pool,pool_name,letter,feeder_id:`${pool}-${letter}`}}))}
 function fcRow(k){return FC.rows.find(r=>r.feeder_key===k)}
-function fcTechs(){try{let a=JSON.parse(localStorage.getItem("pcl.feederTechs")||"null");if(a?.length)return a}catch(e){}return ["Cory","Lucas","Calvin"]}
-function fcTech(){return document.getElementById("fcTech")?.value||""}
+function fcTech(){return null}
 function fcHeaders(extra={}){return {"apikey":PCL_SB_KEY,"Authorization":`Bearer ${PCL_SB_KEY}`,"Content-Type":"application/json",...extra}}
 function fcFmt(t){return t?new Date(t).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):""}
 function fcElapsed(a,b){if(!a||!b)return"";let d=new Date(b)-new Date(a);if(d<0)return"";let h=Math.floor(d/36e5),m=Math.round((d%36e5)/6e4);return h?`${h}h ${m}m`:`${m}m`}
@@ -727,19 +727,18 @@ async function fcLoad(){
 }
 
 async function fcSave(x,patch){let r=fcRow(x.feeder_key)||{id:crypto.randomUUID(),month:FC.month,feeder_key:x.feeder_key,property:x.property,pool_id:x.pool,pool_name:x.pool_name,feeder_letter:x.letter,session:1};Object.assign(r,patch);let resp=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?on_conflict=month,feeder_key`,{method:"POST",headers:fcHeaders({Prefer:"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(r)});if(!resp.ok)return toast("Could not save.");let saved=(await resp.json())[0],i=FC.rows.findIndex(v=>v.feeder_key===x.feeder_key);if(i>=0)FC.rows[i]=saved;else FC.rows.push(saved);fcRender()}
-window.fcV6Feed=async k=>{let t=fcTech();if(!t)return toast("Select Working as first.");let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.feed_down_at&&!r?.cleaned_at){if(!confirm(`Clear feed-down for ${x.feeder_id}?`))return;return fcSave(x,{feed_down_at:null,feed_down_by:null,feed_level:null,level_updated_at:null})}await fcSave(x,{feed_down_at:new Date().toISOString(),feed_down_by:t,feed_level:"100%",level_updated_at:new Date().toISOString(),cleaned_at:null,cleaned_by:null})}
-window.fcV6Clean=async k=>{let t=fcTech();if(!t)return toast("Select Working as first.");let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.cleaned_at){if(!confirm(`Clear cleaned status for ${x.feeder_id}?`))return;return fcSave(x,{cleaned_at:null,cleaned_by:null})}let now=new Date().toISOString(),patch={cleaned_at:now,cleaned_by:t,feed_level:"Empty",level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
-window.fcV6Level=async(k,v)=>{if(!v)return;let t=fcTech();if(!t)return toast("Select Working as first.");let x=fcInv().find(q=>q.feeder_key===k),r=fcRow(k),now=new Date().toISOString(),patch={feed_level:v,level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
+window.fcV6Feed=async k=>{let t=null;let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.feed_down_at&&!r?.cleaned_at){if(!confirm(`Clear feed-down for ${x.feeder_id}?`))return;return fcSave(x,{feed_down_at:null,feed_down_by:null,feed_level:null,level_updated_at:null})}await fcSave(x,{feed_down_at:new Date().toISOString(),feed_down_by:t,feed_level:"100%",level_updated_at:new Date().toISOString(),cleaned_at:null,cleaned_by:null})}
+window.fcV6Clean=async k=>{let t=null;let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.cleaned_at){if(!confirm(`Clear cleaned status for ${x.feeder_id}?`))return;return fcSave(x,{cleaned_at:null,cleaned_by:null})}let now=new Date().toISOString(),patch={cleaned_at:now,cleaned_by:t,feed_level:"Empty",level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
+window.fcV6Level=async(k,v)=>{if(!v)return;let t=null;let x=fcInv().find(q=>q.feeder_key===k),r=fcRow(k),now=new Date().toISOString(),patch={feed_level:v,level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
 window.fcNote=k=>{let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k),v=prompt(`Note for ${x.feeder_id}`,r?.note||"");if(v!==null)fcSave(x,{note:v.trim()})}
 function fcStatusReport(){let a=fcInv().map(x=>({...x,r:fcRow(x.feeder_key)||{}})),feed=a.filter(x=>x.r.feed_down_at&&!x.r.cleaned_at),clean=a.filter(x=>x.r.cleaned_at),L=["PULSAR FEEDER STATUS",new Date().toLocaleString([]),""];function sec(title,rows,done){if(!rows.length)return;L.push(title);["Aquatica","SeaWorld","Discovery Cove"].forEach(p=>{let q=rows.filter(x=>x.property===p);if(!q.length)return;L.push(p.toUpperCase());q.forEach(x=>{let r=x.r,d=fcElapsed(r.feed_down_at,done?r.cleaned_at:new Date().toISOString());L.push(`${done?"✓":"•"} ${x.feeder_id} — ${done?`Cleaned ${fcFmt(r.cleaned_at)}`:`${r.feed_level||"100%"} • ${fcFmt(r.feed_down_at)}`}${d?` • ${d}`:""}`);if(r.note?.trim())L.push(`  Note: ${r.note.trim()}`)});L.push("")})}sec("FEEDING DOWN",feed,false);sec("CLEANED",clean,true);L.push("STATUS",`${feed.length} feeding down`,`${clean.length} cleaned`);return L.join("\n").trim()}
 async function fcShareStatus(){let text=fcStatusReport();if(navigator.share){try{await navigator.share({title:"Pulsar Feeder Status",text})}catch(e){}}else{await navigator.clipboard.writeText(text);toast("Status report copied.")}}
 function fcRender(){let all=fcInv(),visible=FC.property==="All"?all:all.filter(x=>x.property===FC.property),feed=all.filter(x=>{let r=fcRow(x.feeder_key);return r?.feed_down_at&&!r?.cleaned_at}).length,clean=all.filter(x=>fcRow(x.feeder_key)?.cleaned_at).length,notes=all.filter(x=>fcRow(x.feeder_key)?.note?.trim()).length;let ov=document.getElementById("fcOverview");if(ov)ov.innerHTML=`<div class="fc-v6-head"><div><strong>${feed}</strong><span>Feeding Down</span></div><div><strong>${clean}</strong><span>Cleaned</span></div><div><strong>${notes}</strong><span>Notes</span></div></div><button class="btn secondary" onclick="fcShareStatus()">Share Status Report</button>`;let q=document.getElementById("fcQueue");if(!q)return;q.innerHTML=`<div class="fc-v6-cols"><span>Feeder</span><span>Feed Down</span><span>Level</span><span>Cleaned</span><span>Notes</span></div>`+["Aquatica","SeaWorld","Discovery Cove"].map(p=>{let z=visible.filter(x=>x.property===p);if(!z.length)return"";return `<div class="fc-v6-prop"><div class="fc-v6-prop-head">${p}</div>`+z.map(x=>{let r=fcRow(x.feeder_key)||{};return `<div class="fc-v6-row"><div class="fc-v6-id"><strong>${x.feeder_id}</strong><small>${x.pool_name}</small></div><button class="fc-v6-btn feed ${r.feed_down_at&&!r.cleaned_at?"on":""}" onclick="fcV6Feed('${x.feeder_key}')">Feed Down${r.feed_down_at?`<small>${fcFmt(r.feed_down_at)}</small>`:""}</button><select class="fc-v6-level" onchange="fcV6Level('${x.feeder_key}',this.value)"><option value="">Level</option>${FC_LEVELS.map(v=>`<option ${r.feed_level===v?"selected":""}>${v}</option>`).join("")}</select><button class="fc-v6-btn clean ${r.cleaned_at?"on":""}" onclick="fcV6Clean('${x.feeder_key}')">Cleaned${r.cleaned_at?`<small>${fcFmt(r.cleaned_at)}</small>`:""}</button><button class="fc-v6-btn note ${r.note?.trim()?"on":""}" onclick="fcNote('${x.feeder_key}')">${r.note?.trim()?"Note ✓":"Note"}</button></div>`}).join("")+`</div>`}).join("")}
-document.getElementById("fcTech").innerHTML=fcTechs().map(t=>`<option>${t}</option>`).join("");
 document.querySelectorAll(".feeder-filter button").forEach(b=>b.onclick=()=>{FC.property=b.dataset.fprop;document.querySelectorAll(".feeder-filter button").forEach(x=>x.classList.toggle("active",x===b));fcRender()});
 window.fcShareStatus=fcShareStatus;
 fcLoad();
 
-/* v6.1 shared-board auto refresh */
+/* v6.2 shared-board auto refresh */
 let fcRefreshInFlight=false;
 async function fcRefreshShared(){
   if(fcRefreshInFlight) return;
@@ -754,12 +753,33 @@ document.querySelectorAll('nav button[data-view="feeders"]').forEach(btn=>{
   btn.addEventListener("click",()=>setTimeout(fcRefreshShared,0));
 });
 document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="visible" && fcFeederViewVisible()) fcRefreshShared();
+  if(document.visibilityState==="visible" && fcFeederViewVisible()){if(fcViewMode==="history")fcLoadHistory();else fcRefreshShared();}
 });
 window.addEventListener("pageshow",()=>{
-  if(fcFeederViewVisible()) fcRefreshShared();
+  if(fcFeederViewVisible()){if(fcViewMode==="history")fcLoadHistory();else fcRefreshShared();}
 });
 
+
+let fcViewMode="current";
+async function fcLoadHistory(){
+ const box=document.getElementById("fcHistoryList"); if(!box)return;
+ box.innerHTML='<div class="muted">Loading shared cleaning history…</div>';
+ try{
+  let a=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?select=*&cleaned_at=not.is.null&order=cleaned_at.desc&limit=500`,{headers:fcHeaders(),cache:"no-store"});
+  if(!a.ok)throw new Error(await a.text()); let rows=await a.json();
+  if(!rows.length){box.innerHTML='<div class="muted">No completed feeder cleanings recorded yet.</div>';return}
+  let groups={}; rows.forEach(r=>{let k=new Date(r.cleaned_at).toLocaleString([],{month:"long",year:"numeric"});(groups[k]??=[]).push(r)});
+  box.innerHTML=Object.entries(groups).map(([month,rs])=>`<div class="fc-history-month"><h3>${month}</h3>${rs.map(r=>{let dur=fcElapsed(r.feed_down_at,r.cleaned_at);return `<div class="fc-history-row"><div><strong>${r.pool_id}-${r.feeder_letter}</strong><small>${r.property}${r.pool_name?` • ${r.pool_name}`:""}</small></div><div><strong>${fcFmt(r.cleaned_at)}</strong><small>${dur?`Feed-down ${dur}`:"No feed-down duration"}</small></div>${r.note?.trim()?`<div class="fc-history-note">${r.note}</div>`:""}</div>`}).join("")}</div>`).join("");
+ }catch(e){console.error(e);box.innerHTML='<div class="muted">Could not load cleaning history.</div>'}
+}
+function fcSetView(mode){
+ fcViewMode=mode;
+ document.getElementById("fcCurrent").classList.toggle("hidden",mode!=="current");
+ document.getElementById("fcHistoryView").classList.toggle("hidden",mode!=="history");
+ document.querySelectorAll(".fc-subtabs [data-fctab]").forEach(b=>b.classList.toggle("active",b.dataset.fctab===mode));
+ if(mode==="history")fcLoadHistory();else fcRefreshShared();
+}
+document.querySelectorAll(".fc-subtabs [data-fctab]").forEach(b=>b.addEventListener("click",()=>fcSetView(b.dataset.fctab)));
 function fcSyncPageChrome(){
   const feeder=document.getElementById("view-feeders");
   document.body.classList.toggle("feeder-view", feeder && !feeder.classList.contains("hidden"));

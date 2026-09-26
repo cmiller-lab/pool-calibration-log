@@ -40,3 +40,9 @@ deployed GitHub Pages build should not remain stuck on an older cached index.
 - Added iOS `pageshow` handling for restored installed-PWA sessions.
 - Added a Last Refreshed indicator.
 - Refreshes use `cache: no-store`.
+
+## v6.2
+- Removed Working as and Session 1 / Session 2 controls.
+- Current and History feeder buttons now work.
+- History loads completed cleanings from Supabase and shows cleaned time, feed-down duration, property/pool, and notes.
+- Foreground refresh updates whichever feeder view is active.
